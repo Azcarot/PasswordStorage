@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"sync"
@@ -13,7 +12,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func AddNewCard(res http.ResponseWriter, req *http.Request) {
+func AddNewLoginPw(res http.ResponseWriter, req *http.Request) {
 	var userData storage.UserData
 	ctx := req.Context()
 	dataLogin, ok := req.Context().Value(storage.UserLoginCtxKey).(string)
@@ -21,32 +20,32 @@ func AddNewCard(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	var bankData storage.BankCardData
+	var loginPw storage.LoginData
 	userData.Login = dataLogin
 	data, err := io.ReadAll(req.Body)
 	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	err = json.Unmarshal(data, &bankData)
+	err = json.Unmarshal(data, &loginPw)
 	if err != nil {
 
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	bankData.User = userData.Login
+	loginPw.User = userData.Login
 	mut := sync.Mutex{}
 	mut.Lock()
 	defer mut.Unlock()
-	bankData.Date = time.Now().Format(time.RFC3339)
-	err = storage.BCST.AddData(bankData)
+	loginPw.Date = time.Now().Format(time.RFC3339)
+	err = storage.LPST.AddData(loginPw)
 	if err != nil {
 		res.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
 
-	err = storage.BCST.CreateNewRecord(ctx)
+	err = storage.LPST.CreateNewRecord(ctx)
 	if err != nil {
 		res.WriteHeader(http.StatusUnprocessableEntity)
 		return
@@ -54,14 +53,14 @@ func AddNewCard(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusAccepted)
 }
 
-func GetBankCard(res http.ResponseWriter, req *http.Request) {
+func GetLoginPW(res http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	_, ok := req.Context().Value(storage.UserLoginCtxKey).(string)
 	if !ok {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	var reqData storage.BankCardData
+	var reqData storage.LoginData
 
 	data, err := io.ReadAll(req.Body)
 	if err != nil {
@@ -74,12 +73,12 @@ func GetBankCard(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	err = storage.BCST.AddData(reqData)
+	err = storage.LPST.AddData(reqData)
 	if err != nil {
 		res.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
-	cardData, err := storage.BCST.GetRecord(ctx)
+	lpwData, err := storage.LPST.GetRecord(ctx)
 	if errors.Is(err, pgx.ErrNoRows) {
 		res.WriteHeader(http.StatusNoContent)
 		return
@@ -89,7 +88,7 @@ func GetBankCard(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	result, err := json.Marshal(cardData)
+	result, err := json.Marshal(lpwData)
 	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
@@ -100,7 +99,7 @@ func GetBankCard(res http.ResponseWriter, req *http.Request) {
 
 }
 
-func UpdateCard(res http.ResponseWriter, req *http.Request) {
+func UpdateLoginPW(res http.ResponseWriter, req *http.Request) {
 	var userData storage.UserData
 	ctx := req.Context()
 	dataLogin, ok := req.Context().Value(storage.UserLoginCtxKey).(string)
@@ -108,55 +107,50 @@ func UpdateCard(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	var bankData storage.BankCardData
+	var loginPWData storage.LoginData
 	userData.Login = dataLogin
 	data, err := io.ReadAll(req.Body)
 	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	err = json.Unmarshal(data, &bankData)
+	err = json.Unmarshal(data, &loginPWData)
 	if err != nil {
-
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	bankData.User = userData.Login
+	loginPWData.User = userData.Login
+
 	mut := sync.Mutex{}
 	mut.Lock()
 	defer mut.Unlock()
-	bankData.Date = time.Now().Format(time.RFC3339)
-	err = storage.BCST.AddData(bankData)
+	loginPWData.Date = time.Now().Format(time.RFC3339)
+	err = storage.LPST.AddData(loginPWData)
 	if err != nil {
 		res.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
-	old, err := storage.BCST.GetRecord(ctx)
+	old, err := storage.LPST.GetRecord(ctx)
 	if err != nil {
-		fmt.Println(err)
 		res.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
-	oldData, ok := old.(storage.BankCardResponse)
+	oldData, ok := old.(storage.LoginResponse)
 	if ok {
-		if bankData.CardNumber == "" {
-			bankData.CardNumber = oldData.CardNumber
+		if loginPWData.Login == "" {
+			loginPWData.Login = oldData.Login
 		}
-		if bankData.Cvc == "" {
-			bankData.Cvc = oldData.Cvc
+		if loginPWData.Password == "" {
+			loginPWData.Password = oldData.Password
 		}
-		if bankData.ExpDate == "" {
-			bankData.ExpDate = oldData.ExpDate
-		}
-		err = storage.BCST.AddData(bankData)
+		err = storage.LPST.AddData(loginPWData)
 		if err != nil {
 			res.WriteHeader(http.StatusUnprocessableEntity)
 			return
 		}
 	}
-
-	err = storage.BCST.UpdateRecord(ctx)
+	err = storage.LPST.UpdateRecord(ctx)
 	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
@@ -164,7 +158,7 @@ func UpdateCard(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusAccepted)
 }
 
-func DeleteCard(res http.ResponseWriter, req *http.Request) {
+func DeleteLoginPW(res http.ResponseWriter, req *http.Request) {
 	var userData storage.UserData
 	ctx := req.Context()
 	dataLogin, ok := req.Context().Value(storage.UserLoginCtxKey).(string)
@@ -172,31 +166,31 @@ func DeleteCard(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	var bankData storage.BankCardData
+	var loginPWData storage.LoginData
 	userData.Login = dataLogin
 	data, err := io.ReadAll(req.Body)
 	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	err = json.Unmarshal(data, &bankData)
+	err = json.Unmarshal(data, &loginPWData)
 	if err != nil {
 
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	bankData.User = userData.Login
+	loginPWData.User = userData.Login
 	mut := sync.Mutex{}
 	mut.Lock()
 	defer mut.Unlock()
-	bankData.Date = time.Now().Format(time.RFC3339)
-	err = storage.BCST.AddData(bankData)
+	loginPWData.Date = time.Now().Format(time.RFC3339)
+	err = storage.LPST.AddData(loginPWData)
 	if err != nil {
 		res.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
-	err = storage.BCST.DeleteRecord(ctx)
+	err = storage.LPST.DeleteRecord(ctx)
 	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
@@ -204,14 +198,14 @@ func DeleteCard(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusOK)
 }
 
-func SearchBankCard(res http.ResponseWriter, req *http.Request) {
+func SearchLoginPW(res http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	_, ok := req.Context().Value(storage.UserLoginCtxKey).(string)
 	if !ok {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	var reqData storage.BankCardData
+	var reqData storage.LoginData
 
 	data, err := io.ReadAll(req.Body)
 	if err != nil {
@@ -224,12 +218,12 @@ func SearchBankCard(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	err = storage.BCST.AddData(reqData)
+	err = storage.LPST.AddData(reqData)
 	if err != nil {
 		res.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
-	cardData, err := storage.BCST.SearchRecord(ctx)
+	lpwData, err := storage.LPST.SearchRecord(ctx)
 	if errors.Is(err, pgx.ErrNoRows) {
 		res.WriteHeader(http.StatusNoContent)
 		return
@@ -239,7 +233,7 @@ func SearchBankCard(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	result, err := json.Marshal(cardData)
+	result, err := json.Marshal(lpwData)
 	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
@@ -250,7 +244,7 @@ func SearchBankCard(res http.ResponseWriter, req *http.Request) {
 
 }
 
-func GetAllBankCards(res http.ResponseWriter, req *http.Request) {
+func GetAllLoginPWs(res http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	_, ok := req.Context().Value(storage.UserLoginCtxKey).(string)
 	if !ok {
@@ -258,7 +252,7 @@ func GetAllBankCards(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	cardData, err := storage.BCST.GetAllRecords(ctx)
+	lpwData, err := storage.LPST.GetAllRecords(ctx)
 	if errors.Is(err, pgx.ErrNoRows) {
 		res.WriteHeader(http.StatusNoContent)
 		return
@@ -268,7 +262,7 @@ func GetAllBankCards(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	result, err := json.Marshal(cardData)
+	result, err := json.Marshal(lpwData)
 	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
 		return

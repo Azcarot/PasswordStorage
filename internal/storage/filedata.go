@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-func (store *BankCardStorage) CreateNewRecord(ctx context.Context) error {
+func (store *FileStorage) CreateNewRecord(ctx context.Context) error {
 	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
 	if !ok {
 		return ErrNoLogin
@@ -16,10 +16,10 @@ func (store *BankCardStorage) CreateNewRecord(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	_, err = store.DB.Exec(ctx, `INSERT INTO bank_card 
-	(card_number, cvc, exp_date, full_name, comment, username, created) 
-	values ($1, $2, $3, $4, $5, $6, $7);`,
-		store.Data.CardNumber, store.Data.Cvc, store.Data.ExpDate, store.Data.FullName, store.Data.Comment, dataLogin, store.Data.Date)
+	_, err = store.DB.Exec(ctx, `INSERT INTO file_data 
+	(file_name, data, comment, username, created) 
+	values ($1, $2, $3, $4, $5);`,
+		store.Data.FileName, store.Data.Data, store.Data.Comment, dataLogin, store.Data.Date)
 	if err != nil {
 		tx.Rollback(ctx)
 		return err
@@ -32,26 +32,26 @@ func (store *BankCardStorage) CreateNewRecord(ctx context.Context) error {
 	return nil
 }
 
-func (store *BankCardStorage) GetRecord(ctx context.Context) (any, error) {
+func (store *FileStorage) GetRecord(ctx context.Context) (any, error) {
 	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
 
 	if !ok {
 		return nil, ErrNoLogin
 	}
-	result := BankCardResponse{}
+	result := FileResponse{}
 
 	for {
 		select {
 		case <-ctx.Done():
 			return result, errTimeout
 		default:
-			query := `SELECT card_number, cvc, exp_date, full_name, comment
-	FROM bank_card
+			query := `SELECT file_name, data, comment
+	FROM file_data
 	WHERE username = $1 AND id = $2`
 
 			rows := store.DB.QueryRow(ctx, query, dataLogin, store.Data.ID)
 
-			if err := rows.Scan(&result.CardNumber, &result.Cvc, &result.ExpDate, &result.FullName, &result.Comment); err != nil {
+			if err := rows.Scan(&result.FileName, &result.Data, &result.Comment); err != nil {
 				return result, err
 			}
 			return result, nil
@@ -60,17 +60,17 @@ func (store *BankCardStorage) GetRecord(ctx context.Context) (any, error) {
 	}
 }
 
-func (store *BankCardStorage) UpdateRecord(ctx context.Context) error {
+func (store *FileStorage) UpdateRecord(ctx context.Context) error {
 	tx, err := store.DB.Begin(ctx)
 	if err != nil {
 		return err
 	}
 
-	query := `UPDATE bank_card SET
-	card_number = $1, cvc = $2 , exp_date = $3, full_name = $4, comment = $5, created = $6
-	WHERE id = $7`
+	query := `UPDATE file_data SET
+	file_name = $1, data = $2 , comment = $3, created = $4
+	WHERE id = $5`
 	_, err = store.DB.Exec(ctx, query,
-		store.Data.CardNumber, store.Data.Cvc, store.Data.ExpDate, store.Data.FullName, store.Data.Comment, store.Data.Date, store.Data.ID)
+		store.Data.FileName, store.Data.Data, store.Data.Comment, store.Data.Date, store.Data.ID)
 	if err != nil {
 		tx.Rollback(ctx)
 		return err
@@ -83,12 +83,12 @@ func (store *BankCardStorage) UpdateRecord(ctx context.Context) error {
 	return nil
 }
 
-func (store *BankCardStorage) DeleteRecord(ctx context.Context) error {
+func (store *FileStorage) DeleteRecord(ctx context.Context) error {
 	tx, err := store.DB.Begin(ctx)
 	if err != nil {
 		return err
 	}
-	query := `DELETE FROM bank_card 
+	query := `DELETE FROM file_data 
 	WHERE id = $1`
 	_, err = store.DB.Exec(ctx, query, store.Data.ID)
 	if err != nil {
@@ -103,38 +103,34 @@ func (store *BankCardStorage) DeleteRecord(ctx context.Context) error {
 	return nil
 }
 
-func (store *BankCardStorage) SearchRecord(ctx context.Context) (any, error) {
+func (store *FileStorage) SearchRecord(ctx context.Context) (any, error) {
 	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
 
 	if !ok {
 		return nil, ErrNoLogin
 	}
-	result := []BankCardResponse{}
+	result := []FileResponse{}
 
 	for {
 		select {
 		case <-ctx.Done():
 			return result, errTimeout
 		default:
-			query := `SELECT card_number, cvc, exp_date, full_name, comment
-	FROM bank_card 
+			query := `SELECT file_name, data, comment
+	FROM file_data
 	WHERE username = $1 and 
-	card_number LIKE $2 OR
-    cvc LIKE $2 OR
-	exp_date LIKE $2 OR
-	full_name LIKE $2 OR
+	file_name LIKE $2 OR
 	comment LIKE $2
 	ORDER BY id DESC`
 
 			rows, err := store.DB.Query(ctx, query, dataLogin, "%"+store.Data.Str+"%")
-			fmt.Println(err)
 			if err != nil {
 				return nil, err
 			}
 			defer rows.Close()
 			for rows.Next() {
-				var resp BankCardResponse
-				if err := rows.Scan(&resp.CardNumber, &resp.Cvc, &resp.ExpDate, &resp.FullName, &resp.Comment); err != nil {
+				var resp FileResponse
+				if err := rows.Scan(&resp.FileName, &resp.Data, &resp.Comment); err != nil {
 					return result, err
 				}
 				result = append(result, resp)
@@ -148,21 +144,21 @@ func (store *BankCardStorage) SearchRecord(ctx context.Context) (any, error) {
 
 }
 
-func (store *BankCardStorage) GetAllRecords(ctx context.Context) (any, error) {
+func (store *FileStorage) GetAllRecords(ctx context.Context) (any, error) {
 	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
 
 	if !ok {
 		return nil, ErrNoLogin
 	}
-	result := []BankCardResponse{}
+	result := []FileResponse{}
 
 	for {
 		select {
 		case <-ctx.Done():
 			return result, errTimeout
 		default:
-			query := `SELECT card_number, cvc, exp_date, full_name, comment
-	FROM bank_card 
+			query := `SELECT file_name, data, comment
+	FROM file_data
 	WHERE username = $1
 	ORDER BY id DESC`
 
@@ -172,8 +168,8 @@ func (store *BankCardStorage) GetAllRecords(ctx context.Context) (any, error) {
 			}
 			defer rows.Close()
 			for rows.Next() {
-				var resp BankCardResponse
-				if err := rows.Scan(&resp.CardNumber, &resp.Cvc, &resp.ExpDate, &resp.FullName, &resp.Comment); err != nil {
+				var resp FileResponse
+				if err := rows.Scan(&resp.FileName, &resp.Data, &resp.Comment); err != nil {
 					return result, err
 				}
 				result = append(result, resp)

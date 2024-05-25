@@ -30,9 +30,9 @@ func (store SQLStore) CreateNewUser(ctx context.Context, data UserData) error {
 				return err
 			}
 
-			_, err = store.DB.Exec(ctx, `INSERT into users (login, password, accrual_points, withdrawal, created) 
-	values ($1, $2, $3, $4, $5);`,
-				data.Login, encodedPW, 0, 0, data.Date)
+			_, err = store.DB.Exec(ctx, `INSERT into users (login, password, created) 
+	values ($1, $2, $3);`,
+				data.Login, encodedPW, data.Date)
 
 			if err != nil {
 				tx.Rollback(ctx)

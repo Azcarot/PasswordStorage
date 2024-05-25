@@ -26,7 +26,6 @@ type CtxKey string
 var mut sync.Mutex
 
 const UserLoginCtxKey CtxKey = "userLogin"
-const OrderNumberCtxKey CtxKey = "orderNumber"
 const DBCtxKey CtxKey = "dbConn"
 
 type UserData struct {
@@ -36,32 +35,74 @@ type UserData struct {
 }
 
 type LoginData struct {
+	ID       string `json:"id"`
 	Login    string `json:"login"`
 	Password string `json:"pwd"`
 	Comment  string `json:"comment"`
 	User     string
+	Date     string
+	Str      string
+}
+
+type LoginResponse struct {
+	Login    string `json:"login"`
+	Password string `json:"pwd"`
+	Comment  string `json:"comment"`
+}
+
+type TextData struct {
+	ID      string `json:"id"`
+	Text    string `json:"text"`
+	Comment string `json:"comment"`
+	User    string
+	Date    string
+	Str     string
+}
+
+type TextResponse struct {
+	Text    string `json:"text"`
+	Comment string `json:"comment"`
+}
+
+type FileData struct {
+	ID       string `json:"id"`
+	FileName string `json:"name"`
+	Data     string `json:"data"`
+	Comment  string `json:"comment"`
+	User     string
+	Date     string
+	Str      string
+}
+
+type FileResponse struct {
+	FileName string `json:"name"`
+	Data     string `json:"data"`
+	Comment  string `json:"comment"`
 }
 
 type BankCardData struct {
-	CardNumber uint64 `json:"number"`
-	Cvc        int    `json:"cvc"`
+	ID         string `json:"id"`
+	CardNumber string `json:"number"`
+	Cvc        string `json:"cvc"`
 	ExpDate    string `json:"exp"`
 	FullName   string `json:"fullname"`
 	Comment    string `json:"comment"`
 	User       string
+	Date       string
+	Str        string
 }
 
 type BankCardResponse struct {
-	CardNumber uint64 `json:"number"`
-	Cvc        int    `json:"cvc"`
+	CardNumber string `json:"number"`
+	Cvc        string `json:"cvc"`
 	ExpDate    string `json:"exp"`
 	FullName   string `json:"fullname"`
 	Comment    string `json:"comment"`
 }
 
-type BalanceResponce struct {
-	Accrual   float64 `json:"current"`
-	Withdrawn float64 `json:"withdrawn"`
+type GetReqData struct {
+	ID  string `json:"id"`
+	Str string `json:"str"`
 }
 
 type PgxConn interface {
@@ -73,11 +114,12 @@ type PgxConn interface {
 
 type PgxStorage interface {
 	CreateNewRecord(ctx context.Context) error
-	UpdateRecord(ctx context.Context, id int) error
-	GetRecord(ctx context.Context, id int) (any, error)
+	UpdateRecord(ctx context.Context) error
+	GetRecord(ctx context.Context) (any, error)
 	GetAllRecords(ctx context.Context) (any, error)
-	SearchRecord(ctx context.Context, str string) (any, error)
-	DeleteRecord(ctx context.Context, id int) error
+	SearchRecord(ctx context.Context) (any, error)
+	DeleteRecord(ctx context.Context) error
+	AddData(data any) error
 }
 
 type SQLStore struct {
@@ -90,9 +132,37 @@ type Storage struct {
 	Data    any
 }
 
+type BankCardStorage struct {
+	Storage PgxStorage
+	DB      *pgx.Conn
+	Data    BankCardData
+}
+
+type LoginPwStorage struct {
+	Storage PgxStorage
+	DB      *pgx.Conn
+	Data    LoginData
+}
+
+type TextStorage struct {
+	Storage PgxStorage
+	DB      *pgx.Conn
+	Data    TextData
+}
+
+type FileStorage struct {
+	Storage PgxStorage
+	DB      *pgx.Conn
+	Data    FileData
+}
+
 var DB *pgx.Conn
 var ST PgxConn
 var PST PgxStorage
+var BCST PgxStorage
+var LPST PgxStorage
+var TST PgxStorage
+var FST PgxStorage
 var errTimeout = fmt.Errorf("timeout exceeded")
 var ErrNoLogin = fmt.Errorf("no login in context")
 
@@ -114,6 +184,34 @@ type WithdrawResponse struct {
 
 func NewPwStorage(storage PgxStorage, db *pgx.Conn) *Storage {
 	return &Storage{
+		Storage: storage,
+		DB:      db,
+	}
+}
+
+func NewBCStorage(storage PgxStorage, db *pgx.Conn) *BankCardStorage {
+	return &BankCardStorage{
+		Storage: storage,
+		DB:      db,
+	}
+}
+
+func NewLPSTtorage(storage PgxStorage, db *pgx.Conn) *LoginPwStorage {
+	return &LoginPwStorage{
+		Storage: storage,
+		DB:      db,
+	}
+}
+
+func NewTSTtorage(storage PgxStorage, db *pgx.Conn) *TextStorage {
+	return &TextStorage{
+		Storage: storage,
+		DB:      db,
+	}
+}
+
+func NewFSTtorage(storage PgxStorage, db *pgx.Conn) *FileStorage {
+	return &FileStorage{
 		Storage: storage,
 		DB:      db,
 	}
@@ -156,8 +254,51 @@ func connectToDB(f utils.Flags) error {
 	ps := fmt.Sprintf(f.FlagDBAddr)
 	DB, err = pgx.Connect(context.Background(), ps)
 	ST = MakeConn(DB)
-	PST = NewPwStorage(PST, DB)
+	BCST = NewBCStorage(BCST, DB)
+	LPST = NewLPSTtorage(LPST, DB)
+	TST = NewTSTtorage(TST, DB)
+	FST = NewFSTtorage(FST, DB)
 	return err
+}
+
+func (store *BankCardStorage) AddData(data any) error {
+
+	newdata, ok := data.(BankCardData)
+	if !ok {
+		return fmt.Errorf("error while asserting data to bank card type")
+	}
+	store.Data = newdata
+	return nil
+}
+
+func (store *LoginPwStorage) AddData(data any) error {
+
+	newdata, ok := data.(LoginData)
+	if !ok {
+		return fmt.Errorf("error while asserting data to login/pw type")
+	}
+	store.Data = newdata
+	return nil
+}
+
+func (store *TextStorage) AddData(data any) error {
+
+	newdata, ok := data.(TextData)
+	if !ok {
+		return fmt.Errorf("error while asserting data to text type")
+	}
+	store.Data = newdata
+	return nil
+}
+
+func (store *FileStorage) AddData(data any) error {
+
+	newdata, ok := data.(FileData)
+	if !ok {
+		return fmt.Errorf("error while asserting data to file type")
+	}
+	store.Data = newdata
+	return nil
 }
 
 func CheckDBConnection() http.Handler {
@@ -185,8 +326,6 @@ func (store SQLStore) CreateTablesForGoKeeper() {
 		id SERIAL NOT NULL PRIMARY KEY, 
 		login TEXT NOT NULL, 
 		password TEXT NOT NULL,
-		user TEXT NOT NULL, 
-		comment TEXT,
 		created text )`
 
 	_, err := store.DB.Exec(ctx, query)
@@ -200,19 +339,73 @@ func (store SQLStore) CreateTablesForGoKeeper() {
 	store.DB.Exec(ctx, queryForFun)
 	query = `CREATE TABLE IF NOT EXISTS bank_card(
 		id SERIAL NOT NULL PRIMARY KEY,
-		card_number BIGINT NOT NULL,
-		cvc BIGINT NOT NULL,
+		card_number TEXT NOT NULL,
+		cvc TEXT NOT NULL,
 		exp_date TEXT,
 		full_name TEXT NOT NULL,
 		comment TEXT,
-		user TEXT NOT NULL,
+		username TEXT NOT NULL,
 		created TEXT
 	)`
 	_, err = store.DB.Exec(ctx, query)
 
 	if err != nil {
 
-		log.Printf("Error %s when creating order table", err)
+		log.Printf("Error %s when creating bank_card table", err)
 
 	}
+
+	queryForFun = `DROP TABLE IF EXISTS login_pw CASCADE`
+	store.DB.Exec(ctx, queryForFun)
+	query = `CREATE TABLE IF NOT EXISTS login_pw(
+		id SERIAL NOT NULL PRIMARY KEY,
+		login TEXT NOT NULL,
+		pw TEXT NOT NULL,
+		comment TEXT,
+		username TEXT NOT NULL,
+		created TEXT
+	)`
+	_, err = store.DB.Exec(ctx, query)
+
+	if err != nil {
+
+		log.Printf("Error %s when creating login_pw table", err)
+
+	}
+
+	queryForFun = `DROP TABLE IF EXISTS text_data CASCADE`
+	store.DB.Exec(ctx, queryForFun)
+	query = `CREATE TABLE IF NOT EXISTS text_data(
+		id SERIAL NOT NULL PRIMARY KEY,
+		text TEXT NOT NULL,
+		comment TEXT,
+		username TEXT NOT NULL,
+		created TEXT
+	)`
+	_, err = store.DB.Exec(ctx, query)
+
+	if err != nil {
+
+		log.Printf("Error %s when creating login_pw table", err)
+
+	}
+
+	queryForFun = `DROP TABLE IF EXISTS file_data CASCADE`
+	store.DB.Exec(ctx, queryForFun)
+	query = `CREATE TABLE IF NOT EXISTS file_data(
+		id SERIAL NOT NULL PRIMARY KEY,
+		file_name TEXT NOT NULL,
+		data TEXT NOT NULL,
+		comment TEXT,
+		username TEXT NOT NULL,
+		created TEXT
+	)`
+	_, err = store.DB.Exec(ctx, query)
+
+	if err != nil {
+
+		log.Printf("Error %s when creating file_data table", err)
+
+	}
+
 }
