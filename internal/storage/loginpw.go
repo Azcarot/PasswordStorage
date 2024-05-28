@@ -2,7 +2,7 @@ package storage
 
 import (
 	"context"
-	"fmt"
+	"strings"
 )
 
 func (store *LoginPwStorage) CreateNewRecord(ctx context.Context) error {
@@ -10,8 +10,10 @@ func (store *LoginPwStorage) CreateNewRecord(ctx context.Context) error {
 	if !ok {
 		return ErrNoLogin
 	}
-	fmt.Println(store.Data)
-
+	err := store.CypherLPWData(ctx)
+	if err != nil {
+		return err
+	}
 	tx, err := store.DB.Begin(ctx)
 	if err != nil {
 		return err
@@ -51,9 +53,16 @@ func (store *LoginPwStorage) GetRecord(ctx context.Context) (any, error) {
 
 			rows := store.DB.QueryRow(ctx, query, dataLogin, store.Data.ID)
 
-			if err := rows.Scan(&result.Login, &result.Password, &result.Comment); err != nil {
+			if err := rows.Scan(&store.Data.Login, &store.Data.Password, &store.Data.Comment); err != nil {
 				return result, err
 			}
+			err := store.DeCypherLPWData(ctx)
+			if err != nil {
+				return result, err
+			}
+			result.Login = store.Data.Login
+			result.Password = store.Data.Password
+			result.Comment = store.Data.Comment
 			return result, nil
 		}
 
@@ -65,7 +74,10 @@ func (store *LoginPwStorage) UpdateRecord(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-
+	err = store.CypherLPWData(ctx)
+	if err != nil {
+		return err
+	}
 	query := `UPDATE login_pw SET
 	login = $1, pw = $2 , comment = $3, created = $4
 	WHERE id = $5`
@@ -109,6 +121,7 @@ func (store *LoginPwStorage) SearchRecord(ctx context.Context) (any, error) {
 	if !ok {
 		return nil, ErrNoLogin
 	}
+
 	result := []LoginResponse{}
 
 	for {
@@ -118,23 +131,36 @@ func (store *LoginPwStorage) SearchRecord(ctx context.Context) (any, error) {
 		default:
 			query := `SELECT login, pw, comment
 	FROM login_pw 
-	WHERE username = $1 and 
-	login LIKE $2 OR
-    pw LIKE $2 OR
-	comment LIKE $2
+	WHERE username = $1 
 	ORDER BY id DESC`
 
-			rows, err := store.DB.Query(ctx, query, dataLogin, "%"+store.Data.Str+"%")
+			rows, err := store.DB.Query(ctx, query, dataLogin)
 			if err != nil {
 				return nil, err
 			}
 			defer rows.Close()
 			for rows.Next() {
 				var resp LoginResponse
-				if err := rows.Scan(&resp.Login, &resp.Password, &resp.Comment); err != nil {
+				myMap := make(map[string]string)
+				if err := rows.Scan(&store.Data.Login, &store.Data.Password, &store.Data.Comment); err != nil {
 					return result, err
 				}
-				result = append(result, resp)
+				err := store.DeCypherLPWData(ctx)
+				if err != nil {
+					return result, err
+				}
+				myMap["Login"] = store.Data.Login
+				myMap["Password"] = store.Data.Password
+				myMap["Comment"] = store.Data.Comment
+				for _, value := range myMap {
+					if strings.Contains(strings.ToLower(value), strings.ToLower(store.Data.Str)) {
+						resp.Login = myMap["Login"]
+						resp.Password = myMap["Password"]
+						resp.Comment = myMap["Comment"]
+						result = append(result, resp)
+					}
+				}
+
 			}
 			if err = rows.Err(); err != nil {
 				return result, err
@@ -170,9 +196,16 @@ func (store *LoginPwStorage) GetAllRecords(ctx context.Context) (any, error) {
 			defer rows.Close()
 			for rows.Next() {
 				var resp LoginResponse
-				if err := rows.Scan(&resp.Login, &resp.Password, &resp.Comment); err != nil {
+				if err := rows.Scan(&store.Data.Login, &store.Data.Password, &store.Data.Comment); err != nil {
 					return result, err
 				}
+				err := store.DeCypherLPWData(ctx)
+				if err != nil {
+					return result, err
+				}
+				resp.Login = store.Data.Login
+				resp.Password = store.Data.Password
+				resp.Comment = store.Data.Comment
 				result = append(result, resp)
 			}
 			if err = rows.Err(); err != nil {
@@ -182,4 +215,44 @@ func (store *LoginPwStorage) GetAllRecords(ctx context.Context) (any, error) {
 		}
 	}
 
+}
+
+func (store *LoginPwStorage) CypherLPWData(ctx context.Context) error {
+	var err error
+	store.Data.Login, err = CypherData(ctx, store.Data.Login)
+	if err != nil {
+		return err
+	}
+	store.Data.Password, err = CypherData(ctx, store.Data.Password)
+	if err != nil {
+		return err
+	}
+
+	store.Data.Comment, err = CypherData(ctx, store.Data.Comment)
+	if err != nil {
+		return err
+	}
+	store.Data.Str, err = CypherData(ctx, store.Data.Str)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+func (store *LoginPwStorage) DeCypherLPWData(ctx context.Context) error {
+	var err error
+	store.Data.Login, err = Dechypher(ctx, store.Data.Login)
+	if err != nil {
+		return err
+	}
+	store.Data.Password, err = Dechypher(ctx, store.Data.Password)
+	if err != nil {
+		return err
+	}
+
+	store.Data.Comment, err = Dechypher(ctx, store.Data.Comment)
+	if err != nil {
+		return err
+	}
+	return err
 }

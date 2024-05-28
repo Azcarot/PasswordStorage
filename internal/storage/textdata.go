@@ -2,7 +2,7 @@ package storage
 
 import (
 	"context"
-	"fmt"
+	"strings"
 )
 
 func (store *TextStorage) CreateNewRecord(ctx context.Context) error {
@@ -10,7 +10,10 @@ func (store *TextStorage) CreateNewRecord(ctx context.Context) error {
 	if !ok {
 		return ErrNoLogin
 	}
-	fmt.Println(store.Data)
+	err := store.CypherTextData(ctx)
+	if err != nil {
+		return err
+	}
 
 	tx, err := store.DB.Begin(ctx)
 	if err != nil {
@@ -51,9 +54,15 @@ func (store *TextStorage) GetRecord(ctx context.Context) (any, error) {
 
 			rows := store.DB.QueryRow(ctx, query, dataLogin, store.Data.ID)
 
-			if err := rows.Scan(&result.Text, &result.Comment); err != nil {
+			if err := rows.Scan(&store.Data.Text, &store.Data.Comment); err != nil {
 				return result, err
 			}
+			err := store.DeCypherTextData(ctx)
+			if err != nil {
+				return result, err
+			}
+			result.Text = store.Data.Text
+			result.Comment = store.Data.Comment
 			return result, nil
 		}
 
@@ -65,7 +74,10 @@ func (store *TextStorage) UpdateRecord(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-
+	err = store.CypherTextData(ctx)
+	if err != nil {
+		return err
+	}
 	query := `UPDATE text_data SET
 	text = $1, comment = $2, created = $3
 	WHERE id = $4`
@@ -118,22 +130,34 @@ func (store *TextStorage) SearchRecord(ctx context.Context) (any, error) {
 		default:
 			query := `SELECT text, comment
 	FROM text_data
-	WHERE username = $1 and 
-	text LIKE $2 OR
-    comment LIKE $2
+	WHERE username = $1 
 	ORDER BY id DESC`
 
-			rows, err := store.DB.Query(ctx, query, dataLogin, "%"+store.Data.Str+"%")
+			rows, err := store.DB.Query(ctx, query, dataLogin)
 			if err != nil {
 				return nil, err
 			}
 			defer rows.Close()
 			for rows.Next() {
 				var resp TextResponse
-				if err := rows.Scan(&resp.Text, &resp.Comment); err != nil {
+				myMap := make(map[string]string)
+				if err := rows.Scan(&store.Data.Text, &store.Data.Comment); err != nil {
 					return result, err
 				}
-				result = append(result, resp)
+				err := store.DeCypherTextData(ctx)
+				if err != nil {
+					return result, err
+				}
+				myMap["Text"] = store.Data.Text
+				myMap["Comment"] = store.Data.Comment
+				for _, value := range myMap {
+					if strings.Contains(strings.ToLower(value), strings.ToLower(store.Data.Str)) {
+						resp.Text = myMap["Text"]
+						resp.Comment = myMap["Comment"]
+						result = append(result, resp)
+					}
+				}
+
 			}
 			if err = rows.Err(); err != nil {
 				return result, err
@@ -169,9 +193,15 @@ func (store *TextStorage) GetAllRecords(ctx context.Context) (any, error) {
 			defer rows.Close()
 			for rows.Next() {
 				var resp TextResponse
-				if err := rows.Scan(&resp.Text, &resp.Comment); err != nil {
+				if err := rows.Scan(&store.Data.Text, &store.Data.Comment); err != nil {
 					return result, err
 				}
+				err := store.DeCypherTextData(ctx)
+				if err != nil {
+					return result, err
+				}
+				resp.Text = store.Data.Text
+				resp.Comment = store.Data.Comment
 				result = append(result, resp)
 			}
 			if err = rows.Err(); err != nil {
@@ -181,4 +211,36 @@ func (store *TextStorage) GetAllRecords(ctx context.Context) (any, error) {
 		}
 	}
 
+}
+
+func (store *TextStorage) CypherTextData(ctx context.Context) error {
+	var err error
+	store.Data.Text, err = CypherData(ctx, store.Data.Text)
+	if err != nil {
+		return err
+	}
+
+	store.Data.Comment, err = CypherData(ctx, store.Data.Comment)
+	if err != nil {
+		return err
+	}
+	store.Data.Str, err = CypherData(ctx, store.Data.Str)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+func (store *TextStorage) DeCypherTextData(ctx context.Context) error {
+	var err error
+	store.Data.Text, err = Dechypher(ctx, store.Data.Text)
+	if err != nil {
+		return err
+	}
+	store.Data.Comment, err = Dechypher(ctx, store.Data.Comment)
+	if err != nil {
+		return err
+	}
+
+	return err
 }

@@ -131,6 +131,25 @@ func UpdateFile(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
+	old, err := storage.FST.GetRecord(ctx)
+	if err != nil {
+		res.WriteHeader(http.StatusUnprocessableEntity)
+		return
+	}
+	oldData, ok := old.(storage.FileResponse)
+	if ok {
+		if fileData.FileName == "" {
+			fileData.FileName = oldData.FileName
+		}
+		if fileData.Data == "" {
+			fileData.Data = oldData.Data
+		}
+		err = storage.FST.AddData(fileData)
+		if err != nil {
+			res.WriteHeader(http.StatusUnprocessableEntity)
+			return
+		}
+	}
 	err = storage.FST.UpdateRecord(ctx)
 	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)

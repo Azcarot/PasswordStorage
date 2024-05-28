@@ -2,8 +2,13 @@ package storage
 
 import (
 	"context"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+	"encoding/base64"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"sync"
@@ -27,6 +32,7 @@ var mut sync.Mutex
 
 const UserLoginCtxKey CtxKey = "userLogin"
 const DBCtxKey CtxKey = "dbConn"
+const EncryptionCtxKey CtxKey = "secret"
 
 type UserData struct {
 	Login    string
@@ -165,6 +171,7 @@ var TST PgxStorage
 var FST PgxStorage
 var errTimeout = fmt.Errorf("timeout exceeded")
 var ErrNoLogin = fmt.Errorf("no login in context")
+var ErrNoKey = fmt.Errorf("no key in context")
 
 type pgxConnTime struct {
 	attempts          int
@@ -408,4 +415,58 @@ func (store SQLStore) CreateTablesForGoKeeper() {
 
 	}
 
+}
+
+func CypherData(ctx context.Context, data string) (string, error) {
+	keyData, ok := ctx.Value(EncryptionCtxKey).([16]byte)
+	if !ok {
+		return "", ErrNoKey
+	}
+	key := keyData[:]
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return "", err
+	}
+
+	ciphertext := make([]byte, aes.BlockSize+len(data))
+	iv := ciphertext[:aes.BlockSize]
+
+	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
+		return "", err
+	}
+
+	stream := cipher.NewCFBEncrypter(block, iv)
+	stream.XORKeyStream(ciphertext[aes.BlockSize:], []byte(data))
+
+	return base64.URLEncoding.EncodeToString(ciphertext), nil
+}
+
+// decrypt decrypts ciphertext using the given key and returns the plaintext
+func Dechypher(ctx context.Context, data string) (string, error) {
+	keyData, ok := ctx.Value(EncryptionCtxKey).([16]byte)
+	if !ok {
+		return "", ErrNoKey
+	}
+	key := keyData[:]
+	ciphertextBytes, err := base64.URLEncoding.DecodeString(data)
+	if err != nil {
+		return "", err
+	}
+
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return "", err
+	}
+
+	if len(ciphertextBytes) < aes.BlockSize {
+		return "", fmt.Errorf("ciphertext слишком короткий")
+	}
+
+	iv := ciphertextBytes[:aes.BlockSize]
+	ciphertextBytes = ciphertextBytes[aes.BlockSize:]
+
+	stream := cipher.NewCFBDecrypter(block, iv)
+	stream.XORKeyStream(ciphertextBytes, ciphertextBytes)
+
+	return string(ciphertextBytes), nil
 }

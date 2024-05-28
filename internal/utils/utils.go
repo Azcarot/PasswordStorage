@@ -14,6 +14,7 @@ type Flags struct {
 	FlagAddr      string
 	FlagDBAddr    string
 	FlagSecretKey string
+	SecretKey     [16]byte
 }
 
 type ServerENV struct {
@@ -57,6 +58,20 @@ func ParseFlagsAndENV() Flags {
 	if len(envcfg.SecretKey) > 0 {
 		Flag.FlagSecretKey = envcfg.SecretKey
 	}
+
+	//Ключ делаем 16-байтным
+	var byteArray [16]byte
+
+	byteSlice := []byte(Flag.FlagSecretKey)
+
+	if len(byteSlice) > 16 {
+
+		copy(byteArray[:], byteSlice[:16])
+	} else {
+
+		copy(byteArray[:], byteSlice)
+	}
+	Flag.SecretKey = byteArray
 
 	return Flag
 }
