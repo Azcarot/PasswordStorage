@@ -6,20 +6,34 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-type initialModel struct {
-	choices  []string         // items on the to-do list
-	cursor   int              // which to-do list item our cursor is pointing at
-	selected map[int]struct{} // which to-do items are selected
+type authModel struct {
+	choices  []string
+	cursor   int
+	selected map[int]struct{}
 }
 
 type mainMenuModel struct {
-	choices  []string         // items on the to-do list
-	cursor   int              // which to-do list item our cursor is pointing at
-	selected map[int]struct{} // which to-do items are selected
+	choices  []string
+	cursor   int
+	selected map[int]struct{}
 }
 
 type MainModel struct {
 	currentModel tea.Model
+}
+
+type mainMenuCho struct {
+	Card  string
+	Text  string
+	Login string
+	File  string
+}
+
+var mainChoices = mainMenuCho{
+	Card:  "Bank card",
+	Text:  "Text data",
+	Login: "Login/password",
+	File:  "File data",
 }
 
 func (m MainModel) Init() tea.Cmd {
@@ -38,8 +52,8 @@ func (m MainModel) View() string {
 
 func InitialModel() MainModel {
 	return MainModel{
-		// Our to-do list is a grocery list
-		currentModel: initialModel{},
+		// Список меню авторизации
+		currentModel: authModel{choices: []string{"Registration", "Log in"}, selected: make(map[int]struct{})},
 	}
 }
 
@@ -50,33 +64,26 @@ func MakeTeaProg() *tea.Program {
 
 func MainMenuModel() mainMenuModel {
 	return mainMenuModel{
-		// Our to-do list is a grocery list
-		choices: []string{"Login/Password", "Bank card", "Text info", "File data"},
+		// Список основного меню
+		choices: []string{mainChoices.Login, mainChoices.Card, mainChoices.Text, mainChoices.File},
 
-		// A map which indicates which choices are selected. We're using
-		// the  map like a mathematical set. The keys refer to the indexes
-		// of the `choices` slice, above.
 		selected: make(map[int]struct{}),
 	}
 }
 
-func (m initialModel) Init() tea.Cmd {
-	// Just return `nil`, which means "no I/O right now, please."
+func (m authModel) Init() tea.Cmd {
 	return nil
 }
 
 func (m mainMenuModel) Init() tea.Cmd {
-	// Just return `nil`, which means "no I/O right now, please."
 	return nil
 }
 
-func (m initialModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m authModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 
-	// Is it a key press?
 	case tea.KeyMsg:
 
-		// Cool, what was the actual key pressed?
 		switch msg.String() {
 
 		// These keys should exit the program.
@@ -103,7 +110,11 @@ func (m initialModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				delete(m.selected, m.cursor)
 			} else {
 				m.selected[m.cursor] = struct{}{}
-				return mainMenuModel{}, nil
+				if m.choices[m.cursor] == "Registration" {
+					return AuthRegModel(), nil
+				} else {
+					return AuthModel(), nil
+				}
 			}
 		}
 	}
@@ -113,104 +124,86 @@ func (m initialModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m initialModel) View() string {
+func (m authModel) View() string {
 	// The header
 	s := "Authorization\n\n"
 
-	// Iterate over our choices
 	for i, choice := range m.choices {
 
-		// Is the cursor pointing at this choice?
-		cursor := " " // no cursor
+		cursor := " "
 		if m.cursor == i {
-			cursor = ">" // cursor!
+			cursor = ">"
 		}
 
-		// Is this choice selected?
-		checked := " " // not selected
+		checked := " "
 		if _, ok := m.selected[i]; ok {
-			checked = "x" // selected!
+			checked = "x"
 		}
 
-		// Render the row
 		s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, choice)
 	}
 
-	// The footer
 	s += "\nPress q to quit.\n"
 
-	// Send the UI for rendering
 	return s
 }
 
 func (m mainMenuModel) View() string {
-	// The header
+
 	s := "Main menu, please select what type of data you whant to interract with:\n\n"
 
-	// Iterate over our choices
 	for i, choice := range m.choices {
 
-		// Is the cursor pointing at this choice?
-		cursor := " " // no cursor
+		cursor := " "
 		if m.cursor == i {
-			cursor = ">" // cursor!
+			cursor = ">"
 		}
 
-		// Is this choice selected?
-		checked := " " // not selected
+		checked := " "
 		if _, ok := m.selected[i]; ok {
-			checked = "x" // selected!
+			checked = "x"
 		}
 
-		// Render the row
 		s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, choice)
 	}
 
-	// The footer
 	s += "\nPress q to quit.\n"
 
-	// Send the UI for rendering
 	return s
 }
 
 func (m mainMenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 
-	// Is it a key press?
 	case tea.KeyMsg:
 
-		// Cool, what was the actual key pressed?
 		switch msg.String() {
 
-		// These keys should exit the program.
 		case "ctrl+c", "q":
 			return m, tea.Quit
 
-		// The "up" and "k" keys move the cursor up
 		case "up", "k":
 			if m.cursor > 0 {
 				m.cursor--
 			}
 
-		// The "down" and "j" keys move the cursor down
 		case "down", "j":
 			if m.cursor < len(m.choices)-1 {
 				m.cursor++
 			}
 
-		// The "enter" key and the spacebar (a literal space) toggle
-		// the selected state for the item that the cursor is pointing at.
 		case "enter", " ":
 			_, ok := m.selected[m.cursor]
 			if ok {
 				delete(m.selected, m.cursor)
 			} else {
 				m.selected[m.cursor] = struct{}{}
+				if m.choices[m.cursor] == mainChoices.Card {
+					return CardMenuModel(), nil
+				}
 			}
 		}
 	}
 
-	// Return the updated model to the Bubble Tea runtime for processing.
-	// Note that we're not returning a command.
 	return m, nil
 }

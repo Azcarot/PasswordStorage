@@ -5,7 +5,10 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+	"crypto/sha256"
+	"database/sql"
 	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -176,17 +179,6 @@ var ErrNoKey = fmt.Errorf("no key in context")
 type pgxConnTime struct {
 	attempts          int
 	timeBeforeAttempt int
-}
-
-type WithdrawRequest struct {
-	OrderNumber string  `json:"order"`
-	Amount      float64 `json:"sum"`
-}
-
-type WithdrawResponse struct {
-	OrderNumber string  `json:"order"`
-	Amount      float64 `json:"sum"`
-	ProcessedAt string  `json:"processed_at"`
 }
 
 func NewPwStorage(storage PgxStorage, db *pgx.Conn) *Storage {
@@ -469,4 +461,42 @@ func Dechypher(ctx context.Context, data string) (string, error) {
 	stream.XORKeyStream(ciphertextBytes, ciphertextBytes)
 
 	return string(ciphertextBytes), nil
+}
+
+func hashDatabaseData(db *sql.DB, query string) (string, error) {
+	rows, err := db.Query(query)
+	if err != nil {
+		return "", err
+	}
+	defer rows.Close()
+
+	hash := sha256.New()
+
+	columns, err := rows.Columns()
+	if err != nil {
+		return "", err
+	}
+
+	values := make([]interface{}, len(columns))
+	valuePtrs := make([]interface{}, len(columns))
+	for i := range values {
+		valuePtrs[i] = &values[i]
+	}
+
+	for rows.Next() {
+		if err := rows.Scan(valuePtrs...); err != nil {
+			return "", err
+		}
+		for _, value := range values {
+			if _, err := fmt.Fprintf(hash, "%v", value); err != nil {
+				return "", err
+			}
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(hash.Sum(nil)), nil
 }
