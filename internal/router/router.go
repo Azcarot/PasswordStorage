@@ -21,19 +21,6 @@ func MakeRouter(flag utils.Flags) *chi.Mux {
 	defer logger.Sync()
 	middleware.Sugar = *logger.Sugar()
 	r := chi.NewRouter()
-	// ticker := time.NewTicker(2 * time.Second)
-	// quit := make(chan struct{})
-	// go func() {
-	// 	for {
-	// 		select {
-	// 		case <-ticker.C:
-	// 			handlers.ActualiseOrders(flag)
-	// 		case <-quit:
-	// 			ticker.Stop()
-	// 			return
-	// 		}
-	// 	}
-	// }()
 	r.Use(middleware.WithLogging)
 	r.Route("/api/user", func(r chi.Router) {
 		r.Post("/register", http.HandlerFunc(handlers.Registration))
@@ -42,6 +29,7 @@ func MakeRouter(flag utils.Flags) *chi.Mux {
 		r.With(middleware.CheckAuthorization, middleware.AddParamToContext(flag.SecretKey)).Post("/card/update", http.HandlerFunc(handlers.UpdateCard))
 		r.With(middleware.CheckAuthorization).Post("/card/delete", http.HandlerFunc(handlers.DeleteCard))
 		r.With(middleware.CheckAuthorization, middleware.AddParamToContext(flag.SecretKey)).Get("/card/search", http.HandlerFunc(handlers.SearchBankCard))
+		r.With(middleware.CheckAuthorization, middleware.AddParamToContext(flag.SecretKey)).Get("/card/sync", http.HandlerFunc(handlers.SyncBankData))
 		r.With(middleware.CheckAuthorization, middleware.AddParamToContext(flag.SecretKey)).Get("/card/all", http.HandlerFunc(handlers.GetAllBankCards))
 		r.With(middleware.CheckAuthorization, middleware.AddParamToContext(flag.SecretKey)).Get("/card/get", http.HandlerFunc(handlers.GetBankCard))
 		r.With(middleware.CheckAuthorization, middleware.AddParamToContext(flag.SecretKey)).Post("/lpw/add", http.HandlerFunc(handlers.AddNewLoginPw))

@@ -42,5 +42,9 @@ func LoginReq(data storage.RegisterRequest) (bool, error) {
 	}
 
 	storage.AuthToken = response.Header.Get("Authorization")
+	err = storage.LiteST.GetSecretKey(data.Login)
+	if err != nil {
+		return false, fmt.Errorf("sqlite user fail")
+	}
 	return true, nil
 }

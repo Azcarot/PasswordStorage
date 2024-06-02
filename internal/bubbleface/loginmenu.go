@@ -2,6 +2,7 @@ package face
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/Azcarot/PasswordStorage/internal/requests"
 	"github.com/Azcarot/PasswordStorage/internal/storage"
@@ -62,6 +63,22 @@ func (m loginmodel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					newheader = "Wrong login/pw"
 					return AuthModel(), tea.ClearScreen
 				}
+				storage.UserLoginPw.Login = req.Login
+				storage.UserLoginPw.Password = req.Password
+				ticker := time.NewTicker(2 * time.Second)
+				quit := make(chan struct{})
+				go func() {
+					for {
+						select {
+						case <-ticker.C:
+							requests.SyncCardReq()
+
+						case <-quit:
+							ticker.Stop()
+							return
+						}
+					}
+				}()
 				return MainMenuModel(), nil
 			}
 			m.nextInput()

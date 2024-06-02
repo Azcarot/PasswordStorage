@@ -16,6 +16,7 @@ const (
 	exp
 	cvv
 	fnm
+	cmt
 )
 
 type cardMenuModel struct {
@@ -157,7 +158,7 @@ func cvvValidator(s string) error {
 }
 
 func AddCardModel() cardModel {
-	var inputs []textinput.Model = make([]textinput.Model, 4)
+	var inputs []textinput.Model = make([]textinput.Model, 5)
 	newheader = "Please insert card data:"
 	inputs[ccn] = textinput.New()
 	inputs[ccn].Placeholder = "4505 **** **** 1234"
@@ -187,6 +188,12 @@ func AddCardModel() cardModel {
 	inputs[fnm].Width = 40
 	inputs[fnm].Prompt = ""
 
+	inputs[cmt] = textinput.New()
+	inputs[cmt].Placeholder = "Some text"
+	inputs[cmt].CharLimit = 100
+	inputs[cmt].Width = 40
+	inputs[cmt].Prompt = ""
+
 	return cardModel{
 		inputs:  inputs,
 		focused: 0,
@@ -211,7 +218,9 @@ func (m cardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				req.ExpDate = (m.inputs[exp].Value())
 				req.Cvc = (m.inputs[cvv].Value())
 				req.FullName = (m.inputs[fnm].Value())
+				req.Comment = (m.inputs[cmt].Value())
 				ok, err := requests.AddCardReq(req)
+
 				if err != nil {
 					newheader = "Something went wrong, please try again"
 					return AddCardModel(), nil
@@ -261,6 +270,8 @@ func (m cardModel) View() string {
  %s  %s  %s
  %s  %s  %s
 
+ %s  %s
+
  %s
 
 
@@ -275,6 +286,8 @@ func (m cardModel) View() string {
 		m.inputs[exp].View(),
 		m.inputs[cvv].View(),
 		m.inputs[fnm].View(),
+		inputStyle.Width(30).Render("Comment"),
+		m.inputs[cmt].View(),
 		continueStyle.Render("Continue ->"),
 	) + "\n"
 }

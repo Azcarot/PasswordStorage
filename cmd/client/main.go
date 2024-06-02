@@ -25,6 +25,7 @@ func main() {
 		}
 
 	}
+
 	storage.LiteConn.CreateTablesForGoKeeper(storage.LiteST)
 	p := face.MakeTeaProg()
 	if _, err := p.Run(); err != nil {

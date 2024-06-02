@@ -2,6 +2,7 @@ package face
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/Azcarot/PasswordStorage/internal/requests"
 	"github.com/Azcarot/PasswordStorage/internal/storage"
@@ -71,7 +72,6 @@ func (m regmodel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.Type {
 		case tea.KeyEnter:
 			if m.focused == len(m.inputs)-1 {
-				fmt.Println(m.inputs[login].Value())
 				var req storage.RegisterRequest
 				req.Login = (m.inputs[login].Value())
 				req.Password = (m.inputs[pwd].Value())
@@ -84,6 +84,21 @@ func (m regmodel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					newheader = "User already exists"
 					return AuthRegModel(), tea.ClearScreen
 				}
+				storage.UserLoginPw.Login = req.Login
+				storage.UserLoginPw.Password = req.Password
+				ticker := time.NewTicker(2 * time.Second)
+				quit := make(chan struct{})
+				go func() {
+					for {
+						select {
+						case <-ticker.C:
+							requests.SyncCardReq()
+						case <-quit:
+							ticker.Stop()
+							return
+						}
+					}
+				}()
 				return MainMenuModel(), nil
 			}
 			m.nextInput()

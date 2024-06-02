@@ -40,7 +40,16 @@ func RegistrationReq(data storage.RegisterRequest) (bool, error) {
 	if response.StatusCode == http.StatusConflict {
 		return false, nil
 	}
-
+	ctx := req.Context()
 	storage.AuthToken = response.Header.Get("Authorization")
+	err = storage.LiteST.CreateNewUser(ctx, data)
+	if err != nil {
+		return false, fmt.Errorf("sqlite user fail")
+	}
+	err = storage.LiteST.GetSecretKey(data.Login)
+	if err != nil {
+
+		return false, fmt.Errorf("sqlite user fail")
+	}
 	return true, nil
 }

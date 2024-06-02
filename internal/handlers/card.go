@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"sync"
@@ -84,12 +83,13 @@ func GetBankCard(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusNoContent)
 		return
 	}
+
 	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
-	result, err := json.Marshal(cardData)
+	bankData := cardData.(storage.BankCardData)
+	result, err := json.Marshal(bankData)
 	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
@@ -134,7 +134,6 @@ func UpdateCard(res http.ResponseWriter, req *http.Request) {
 	}
 	old, err := storage.BCST.GetRecord(ctx)
 	if err != nil {
-		fmt.Println(err)
 		res.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}

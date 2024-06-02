@@ -5,10 +5,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
-	"crypto/sha256"
-	"database/sql"
 	"encoding/base64"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -102,6 +99,7 @@ type BankCardData struct {
 }
 
 type BankCardResponse struct {
+	ID         string `json:"id"`
 	CardNumber string `json:"number"`
 	Cvc        string `json:"cvc"`
 	ExpDate    string `json:"exp"`
@@ -128,7 +126,9 @@ type PgxStorage interface {
 	GetAllRecords(ctx context.Context) (any, error)
 	SearchRecord(ctx context.Context) (any, error)
 	DeleteRecord(ctx context.Context) error
+	HashDatabaseData(ctx context.Context) (string, error)
 	AddData(data any) error
+	GetData() any
 }
 
 type SQLStore struct {
@@ -165,6 +165,15 @@ type FileStorage struct {
 	Data    FileData
 }
 
+type SyncData struct {
+	BankCardHash string
+	TextDataHash string
+	FileData     string
+	LoginData    string
+}
+
+var SyncServerHashes SyncData
+var UserLoginPw UserData
 var DB *pgx.Conn
 var ST PgxConn
 var PST PgxStorage
@@ -270,6 +279,30 @@ func (store *BankCardStorage) AddData(data any) error {
 	return nil
 }
 
+func (store *BankCardStorage) GetData() any {
+
+	newdata := store.Data
+
+	return newdata
+}
+
+func (store *BankCardLiteStorage) AddData(data any) error {
+
+	newdata, ok := data.(BankCardData)
+	if !ok {
+		return fmt.Errorf("error while asserting data to bank card type")
+	}
+	store.Data = newdata
+	return nil
+}
+
+func (store *BankCardLiteStorage) GetData() any {
+
+	newdata := store.Data
+
+	return newdata
+}
+
 func (store *LoginPwStorage) AddData(data any) error {
 
 	newdata, ok := data.(LoginData)
@@ -278,6 +311,13 @@ func (store *LoginPwStorage) AddData(data any) error {
 	}
 	store.Data = newdata
 	return nil
+}
+
+func (store *LoginPwStorage) GetData() any {
+
+	newdata := store.Data
+
+	return newdata
 }
 
 func (store *TextStorage) AddData(data any) error {
@@ -290,6 +330,13 @@ func (store *TextStorage) AddData(data any) error {
 	return nil
 }
 
+func (store *TextStorage) GetData() any {
+
+	newdata := store.Data
+
+	return newdata
+}
+
 func (store *FileStorage) AddData(data any) error {
 
 	newdata, ok := data.(FileData)
@@ -298,6 +345,13 @@ func (store *FileStorage) AddData(data any) error {
 	}
 	store.Data = newdata
 	return nil
+}
+
+func (store *FileStorage) GetData() any {
+
+	newdata := store.Data
+
+	return newdata
 }
 
 func CheckDBConnection() http.Handler {
@@ -461,42 +515,4 @@ func Dechypher(ctx context.Context, data string) (string, error) {
 	stream.XORKeyStream(ciphertextBytes, ciphertextBytes)
 
 	return string(ciphertextBytes), nil
-}
-
-func hashDatabaseData(db *sql.DB, query string) (string, error) {
-	rows, err := db.Query(query)
-	if err != nil {
-		return "", err
-	}
-	defer rows.Close()
-
-	hash := sha256.New()
-
-	columns, err := rows.Columns()
-	if err != nil {
-		return "", err
-	}
-
-	values := make([]interface{}, len(columns))
-	valuePtrs := make([]interface{}, len(columns))
-	for i := range values {
-		valuePtrs[i] = &values[i]
-	}
-
-	for rows.Next() {
-		if err := rows.Scan(valuePtrs...); err != nil {
-			return "", err
-		}
-		for _, value := range values {
-			if _, err := fmt.Fprintf(hash, "%v", value); err != nil {
-				return "", err
-			}
-		}
-	}
-
-	if err := rows.Err(); err != nil {
-		return "", err
-	}
-
-	return hex.EncodeToString(hash.Sum(nil)), nil
 }

@@ -2,6 +2,9 @@ package storage
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"strings"
 )
@@ -79,7 +82,6 @@ func (store *BankCardStorage) UpdateRecord(ctx context.Context) error {
 		return err
 	}
 	err = store.CypherBankData(ctx)
-	fmt.Println(err)
 	if err != nil {
 		return err
 	}
@@ -194,7 +196,7 @@ func (store *BankCardStorage) GetAllRecords(ctx context.Context) (any, error) {
 		case <-ctx.Done():
 			return result, errTimeout
 		default:
-			query := `SELECT card_number, cvc, exp_date, full_name, comment
+			query := `SELECT id, card_number, cvc, exp_date, full_name, comment
 	FROM bank_card 
 	WHERE username = $1
 	ORDER BY id DESC`
@@ -206,13 +208,14 @@ func (store *BankCardStorage) GetAllRecords(ctx context.Context) (any, error) {
 			defer rows.Close()
 			for rows.Next() {
 				var resp BankCardResponse
-				if err := rows.Scan(&store.Data.CardNumber, &store.Data.Cvc, &store.Data.ExpDate, &store.Data.FullName, &store.Data.Comment); err != nil {
+				if err := rows.Scan(&store.Data.ID, &store.Data.CardNumber, &store.Data.Cvc, &store.Data.ExpDate, &store.Data.FullName, &store.Data.Comment); err != nil {
 					return result, err
 				}
 				err := store.DeCypherBankData(ctx)
 				if err != nil {
 					return result, err
 				}
+				resp.ID = store.Data.ID
 				resp.CardNumber = store.Data.CardNumber
 				resp.Cvc = store.Data.Cvc
 				resp.ExpDate = store.Data.ExpDate
@@ -281,4 +284,21 @@ func (store *BankCardStorage) DeCypherBankData(ctx context.Context) error {
 		return err
 	}
 	return err
+}
+
+func (store BankCardStorage) HashDatabaseData(ctx context.Context) (string, error) {
+	bankData, err := store.GetAllRecords(ctx)
+	if err != nil {
+		return "", err
+	}
+	jsonData, err := json.Marshal(bankData.([]BankCardResponse))
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal card data: %v", err)
+	}
+
+	hash := sha256.Sum256(jsonData)
+
+	hashString := hex.EncodeToString(hash[:])
+
+	return hashString, nil
 }

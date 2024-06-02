@@ -2,6 +2,10 @@ package storage
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
 	"strings"
 )
 
@@ -260,4 +264,21 @@ func (store *FileStorage) DeCypherFileData(ctx context.Context) error {
 	}
 
 	return err
+}
+
+func (store FileStorage) HashDatabaseData(ctx context.Context) (string, error) {
+	fileData, err := store.GetAllRecords(ctx)
+	if err != nil {
+		return "", err
+	}
+	jsonData, err := json.Marshal(fileData.([]FileResponse))
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal file data: %v", err)
+	}
+
+	hash := sha256.Sum256(jsonData)
+
+	hashString := hex.EncodeToString(hash[:])
+
+	return hashString, nil
 }

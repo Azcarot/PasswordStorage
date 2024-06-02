@@ -2,7 +2,10 @@ package storage
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"time"
@@ -13,6 +16,8 @@ import (
 
 type LiteConn interface {
 	CreateTablesForGoKeeper()
+	CreateNewUser(ctx context.Context, data RegisterRequest) error
+	GetSecretKey(data string) error
 }
 
 type ClientUserStorage struct {
@@ -30,10 +35,19 @@ type liteConnTime struct {
 	timeBeforeAttempt int
 }
 
+type SyncReq struct {
+	BankCard string `json:"bank"`
+	TextData string `json:"text"`
+	FileData string `json:"file"`
+	LoginPw  string `json:"lpw"`
+}
+
 var LiteDB *sql.DB
 var LiteST LiteConn
 var ServURL string
 var AuthToken string
+var Secret string
+var SyncClientHashes SyncReq
 
 func MakeLiteConn(db *sql.DB) LiteConn {
 	return &SQLLiteStore{
@@ -68,6 +82,7 @@ func connectToLiteDB(f utils.Flags) error {
 	ps := fmt.Sprintf(f.FlagDBAddr)
 	LiteDB, err = sql.Open("sqlite", ps)
 	LiteST = MakeLiteConn(LiteDB)
+	BCLiteS = NewBCLiteStorage(BCLiteS, LiteDB)
 	return err
 }
 
@@ -79,9 +94,10 @@ func (store SQLLiteStore) CreateTablesForGoKeeper() {
 	queryForFun := `DROP TABLE IF EXISTS users CASCADE`
 	store.DB.ExecContext(ctx, queryForFun)
 	query := `CREATE TABLE IF NOT EXISTS users (
-		id SERIAL NOT NULL PRIMARY KEY, 
+		id INTEGER PRIMARY KEY, 
 		login TEXT NOT NULL, 
 		password TEXT NOT NULL,
+		secret TEXT NOT NULL,
 		created text )`
 
 	_, err := store.DB.ExecContext(ctx, query)
@@ -162,6 +178,70 @@ func (store SQLLiteStore) CreateTablesForGoKeeper() {
 
 		log.Printf("Error %s when creating file_data table", err)
 
+	}
+
+}
+
+func GenerateSecretKey(data RegisterRequest) string {
+	// Combine login and password
+	combined := data.Login + ":" + data.Password
+
+	// Use a secret key for HMAC, this should be a constant or derived securely
+	hmacKey := []byte(data.Login)
+
+	// Create HMAC using SHA-256
+	h := hmac.New(sha256.New, hmacKey)
+	h.Write([]byte(combined))
+
+	// Get the HMAC hash as a hexadecimal string
+	secretKey := hex.EncodeToString(h.Sum(nil))
+
+	return secretKey
+}
+
+func (store SQLLiteStore) GetSecretKey(login string) error {
+	query := `SELECT DISTINCT secret
+	FROM users
+	WHERE login = $1`
+
+	rows := store.DB.QueryRow(query, login)
+
+	if err := rows.Scan(&Secret); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (store SQLLiteStore) CreateNewUser(ctx context.Context, data RegisterRequest) error {
+	encodedPW := utils.ShaData(data.Password, SecretKey)
+	for {
+		select {
+		case <-ctx.Done():
+			return errTimeout
+		default:
+			mut.Lock()
+			defer mut.Unlock()
+			tx, err := store.DB.BeginTx(ctx, nil)
+			if err != nil {
+				return err
+			}
+			newKey := GenerateSecretKey(data)
+			date := time.Now().Format(time.RFC3339)
+			_, err = store.DB.ExecContext(ctx, `INSERT into users (login, password, secret, created) 
+	values ($1, $2, $3, $4);`,
+				data.Login, encodedPW, newKey, date)
+
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
+			err = tx.Commit()
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
+			return err
+		}
 	}
 
 }

@@ -2,6 +2,10 @@ package storage
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
 	"strings"
 )
 
@@ -255,4 +259,21 @@ func (store *LoginPwStorage) DeCypherLPWData(ctx context.Context) error {
 		return err
 	}
 	return err
+}
+
+func (store LoginPwStorage) HashDatabaseData(ctx context.Context) (string, error) {
+	lpwData, err := store.GetAllRecords(ctx)
+	if err != nil {
+		return "", err
+	}
+	jsonData, err := json.Marshal(lpwData.([]LoginResponse))
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal login/pw data: %v", err)
+	}
+
+	hash := sha256.Sum256(jsonData)
+
+	hashString := hex.EncodeToString(hash[:])
+
+	return hashString, nil
 }

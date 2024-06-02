@@ -2,34 +2,46 @@ package storage
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"strings"
 )
 
 type BankCardLiteStorage struct {
 	Storage PgxStorage
-	DB      *sql.Conn
+	DB      *sql.DB
 	Data    BankCardData
 }
+
+var BCLiteS PgxStorage
 
 func (store *BankCardLiteStorage) CreateNewRecord(ctx context.Context) error {
 	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
 	if !ok {
 		return ErrNoLogin
 	}
-	err := store.CypherBankData(ctx)
-	if err != nil {
-		return err
-	}
+
 	tx, err := store.DB.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
+
 	_, err = store.DB.ExecContext(ctx, `INSERT INTO bank_card 
-	(card_number, cvc, exp_date, full_name, comment, username, created) 
-	values ($1, $2, $3, $4, $5, $6, $7);`,
-		store.Data.CardNumber, store.Data.Cvc, store.Data.ExpDate, store.Data.FullName, store.Data.Comment, dataLogin, store.Data.Date)
+	(id, card_number, cvc, exp_date, full_name, comment, username, created) 
+	values ($1, $2, $3, $4, $5, $6, $7, $8)
+	ON CONFLICT(id) DO UPDATE SET
+	id = excluded.id,
+	card_number = excluded.card_number,
+	cvc = excluded.cvc,
+	exp_date = excluded.exp_date,
+	full_name = excluded.full_name,
+	comment = excluded.comment,
+	username = excluded.username,
+	created = excluded.created;`,
+		store.Data.ID, store.Data.CardNumber, store.Data.Cvc, store.Data.ExpDate, store.Data.FullName, store.Data.Comment, dataLogin, store.Data.Date)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -86,7 +98,6 @@ func (store *BankCardLiteStorage) UpdateRecord(ctx context.Context) error {
 		return err
 	}
 	err = store.CypherBankData(ctx)
-	fmt.Println(err)
 	if err != nil {
 		return err
 	}
@@ -201,7 +212,7 @@ func (store *BankCardLiteStorage) GetAllRecords(ctx context.Context) (any, error
 		case <-ctx.Done():
 			return result, errTimeout
 		default:
-			query := `SELECT card_number, cvc, exp_date, full_name, comment
+			query := `SELECT id, card_number, cvc, exp_date, full_name, comment
 	FROM bank_card 
 	WHERE username = $1
 	ORDER BY id DESC`
@@ -213,13 +224,11 @@ func (store *BankCardLiteStorage) GetAllRecords(ctx context.Context) (any, error
 			defer rows.Close()
 			for rows.Next() {
 				var resp BankCardResponse
-				if err := rows.Scan(&store.Data.CardNumber, &store.Data.Cvc, &store.Data.ExpDate, &store.Data.FullName, &store.Data.Comment); err != nil {
+				if err := rows.Scan(&store.Data.ID, &store.Data.CardNumber, &store.Data.Cvc, &store.Data.ExpDate, &store.Data.FullName, &store.Data.Comment); err != nil {
 					return result, err
 				}
-				err := store.DeCypherBankData(ctx)
-				if err != nil {
-					return result, err
-				}
+
+				resp.ID = store.Data.ID
 				resp.CardNumber = store.Data.CardNumber
 				resp.Cvc = store.Data.Cvc
 				resp.ExpDate = store.Data.ExpDate
@@ -288,4 +297,28 @@ func (store *BankCardLiteStorage) DeCypherBankData(ctx context.Context) error {
 		return err
 	}
 	return err
+}
+
+func (store BankCardLiteStorage) HashDatabaseData(ctx context.Context) (string, error) {
+	bankData, err := store.GetAllRecords(ctx)
+	if err != nil {
+		return "", err
+	}
+	jsonData, err := json.Marshal(bankData.([]BankCardResponse))
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal card data: %v", err)
+	}
+
+	hash := sha256.Sum256(jsonData)
+
+	hashString := hex.EncodeToString(hash[:])
+
+	return hashString, nil
+}
+
+func NewBCLiteStorage(storage PgxStorage, db *sql.DB) *BankCardLiteStorage {
+	return &BankCardLiteStorage{
+		Storage: storage,
+		DB:      db,
+	}
 }
