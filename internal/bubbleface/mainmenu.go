@@ -201,6 +201,9 @@ func (m mainMenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.choices[m.cursor] == mainChoices.Card {
 					return CardMenuModel(), nil
 				}
+				if m.choices[m.cursor] == mainChoices.Text {
+					return TextMenuModel(), nil
+				}
 			}
 		}
 	}

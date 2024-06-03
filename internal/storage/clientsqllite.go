@@ -83,6 +83,7 @@ func connectToLiteDB(f utils.Flags) error {
 	LiteDB, err = sql.Open("sqlite", ps)
 	LiteST = MakeLiteConn(LiteDB)
 	BCLiteS = NewBCLiteStorage(BCLiteS, LiteDB)
+	TLiteS = NewTLiteStorage(TLiteS, LiteDB)
 	return err
 }
 

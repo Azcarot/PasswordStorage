@@ -86,13 +86,14 @@ func (m regmodel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				storage.UserLoginPw.Login = req.Login
 				storage.UserLoginPw.Password = req.Password
-				ticker := time.NewTicker(2 * time.Second)
+				ticker := time.NewTicker(4 * time.Second)
 				quit := make(chan struct{})
 				go func() {
 					for {
 						select {
 						case <-ticker.C:
 							requests.SyncCardReq()
+							requests.SyncTextReq()
 						case <-quit:
 							ticker.Stop()
 							return

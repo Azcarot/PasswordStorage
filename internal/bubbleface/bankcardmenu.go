@@ -16,7 +16,7 @@ const (
 	exp
 	cvv
 	fnm
-	cmt
+	bcmt
 )
 
 type cardMenuModel struct {
@@ -27,19 +27,19 @@ type cardMenuModel struct {
 type bankCardCho struct {
 	Add    string
 	View   string
-	Search string
+	Delete string
 }
 
 var bankChoices = bankCardCho{
 	Add:    "Add New Card",
-	View:   "Get saved card data",
-	Search: "Search for card",
+	View:   "View/Update card data",
+	Delete: "Delete card",
 }
 
 func CardMenuModel() cardMenuModel {
 	return cardMenuModel{
 
-		choices: []string{bankChoices.Add, bankChoices.View, bankChoices.Search},
+		choices: []string{bankChoices.Add, bankChoices.View, bankChoices.Delete},
 
 		selected: make(map[int]struct{}),
 	}
@@ -102,6 +102,9 @@ func (m cardMenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.selected[m.cursor] = struct{}{}
 				if m.choices[m.cursor] == bankChoices.Add {
 					return AddCardModel(), nil
+				}
+				if m.choices[m.cursor] == bankChoices.View {
+					return CardViewModel(), nil
 				}
 			}
 		}
@@ -188,11 +191,11 @@ func AddCardModel() cardModel {
 	inputs[fnm].Width = 40
 	inputs[fnm].Prompt = ""
 
-	inputs[cmt] = textinput.New()
-	inputs[cmt].Placeholder = "Some text"
-	inputs[cmt].CharLimit = 100
-	inputs[cmt].Width = 40
-	inputs[cmt].Prompt = ""
+	inputs[bcmt] = textinput.New()
+	inputs[bcmt].Placeholder = "Some text"
+	inputs[bcmt].CharLimit = 100
+	inputs[bcmt].Width = 40
+	inputs[bcmt].Prompt = ""
 
 	return cardModel{
 		inputs:  inputs,
@@ -218,7 +221,7 @@ func (m cardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				req.ExpDate = (m.inputs[exp].Value())
 				req.Cvc = (m.inputs[cvv].Value())
 				req.FullName = (m.inputs[fnm].Value())
-				req.Comment = (m.inputs[cmt].Value())
+				req.Comment = (m.inputs[bcmt].Value())
 				ok, err := requests.AddCardReq(req)
 
 				if err != nil {
@@ -287,7 +290,7 @@ func (m cardModel) View() string {
 		m.inputs[cvv].View(),
 		m.inputs[fnm].View(),
 		inputStyle.Width(30).Render("Comment"),
-		m.inputs[cmt].View(),
+		m.inputs[bcmt].View(),
 		continueStyle.Render("Continue ->"),
 	) + "\n"
 }

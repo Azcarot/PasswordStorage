@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/Azcarot/PasswordStorage/internal/handlers"
 	"github.com/Azcarot/PasswordStorage/internal/storage"
 )
 
-func LoginReq(data storage.RegisterRequest) (bool, error) {
+func LoginReq(data handlers.LoginRequest) (bool, error) {
 	if len(data.Login) == 0 || len(data.Password) == 0 {
 		return false, fmt.Errorf("wrong login/password data")
 	}

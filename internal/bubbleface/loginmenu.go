@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Azcarot/PasswordStorage/internal/handlers"
 	"github.com/Azcarot/PasswordStorage/internal/requests"
 	"github.com/Azcarot/PasswordStorage/internal/storage"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -51,7 +52,7 @@ func (m loginmodel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.Type {
 		case tea.KeyEnter:
 			if m.focused == len(m.inputs)-1 {
-				var req storage.RegisterRequest
+				var req handlers.LoginRequest
 				req.Login = (m.inputs[login].Value())
 				req.Password = (m.inputs[pwd].Value())
 				ok, err := requests.LoginReq(req)
@@ -72,7 +73,7 @@ func (m loginmodel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						select {
 						case <-ticker.C:
 							requests.SyncCardReq()
-
+							requests.SyncTextReq()
 						case <-quit:
 							ticker.Stop()
 							return

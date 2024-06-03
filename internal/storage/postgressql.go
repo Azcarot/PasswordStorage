@@ -66,6 +66,7 @@ type TextData struct {
 }
 
 type TextResponse struct {
+	ID      string `json:"id"`
 	Text    string `json:"text"`
 	Comment string `json:"comment"`
 }
@@ -297,6 +298,23 @@ func (store *BankCardLiteStorage) AddData(data any) error {
 }
 
 func (store *BankCardLiteStorage) GetData() any {
+
+	newdata := store.Data
+
+	return newdata
+}
+
+func (store *TextLiteStorage) AddData(data any) error {
+
+	newdata, ok := data.(TextData)
+	if !ok {
+		return fmt.Errorf("error while asserting data to text type")
+	}
+	store.Data = newdata
+	return nil
+}
+
+func (store *TextLiteStorage) GetData() any {
 
 	newdata := store.Data
 

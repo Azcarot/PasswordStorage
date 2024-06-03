@@ -43,6 +43,7 @@ func MakeRouter(flag utils.Flags) *chi.Mux {
 		r.With(middleware.CheckAuthorization).Post("/text/delete", http.HandlerFunc(handlers.DeleteText))
 		r.With(middleware.CheckAuthorization, middleware.AddParamToContext(flag.SecretKey)).Get("/text/search", http.HandlerFunc(handlers.SearchText))
 		r.With(middleware.CheckAuthorization, middleware.AddParamToContext(flag.SecretKey)).Get("/text/all", http.HandlerFunc(handlers.GetAllTexts))
+		r.With(middleware.CheckAuthorization, middleware.AddParamToContext(flag.SecretKey)).Get("/text/sync", http.HandlerFunc(handlers.SyncTextData))
 		r.With(middleware.CheckAuthorization, middleware.AddParamToContext(flag.SecretKey)).Get("/text/get", http.HandlerFunc(handlers.GetText))
 		r.With(middleware.CheckAuthorization, middleware.AddParamToContext(flag.SecretKey)).Post("/file/add", http.HandlerFunc(handlers.AddNewFile))
 		r.With(middleware.CheckAuthorization, middleware.AddParamToContext(flag.SecretKey)).Post("/file/update", http.HandlerFunc(handlers.UpdateFile))

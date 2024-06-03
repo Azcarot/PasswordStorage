@@ -12,23 +12,13 @@ import (
 	"github.com/Azcarot/PasswordStorage/internal/storage"
 )
 
-func AddCardReq(data storage.BankCardData) (bool, error) {
+func AddTextReq(data storage.TextData) (bool, error) {
 	var b [16]byte
 	copy(b[:], storage.Secret)
 	ctx := context.WithValue(context.Background(), storage.EncryptionCtxKey, b)
-	var cyphData storage.BankCardData
+	var cyphData storage.TextData
 	var err error
-	cyphData.CardNumber, err = storage.CypherData(ctx, data.CardNumber)
-
-	if err != nil {
-		return false, err
-	}
-	cyphData.ExpDate, err = storage.CypherData(ctx, data.ExpDate)
-
-	if err != nil {
-		return false, err
-	}
-	cyphData.Cvc, err = storage.CypherData(ctx, data.Cvc)
+	cyphData.Text, err = storage.CypherData(ctx, data.Text)
 
 	if err != nil {
 		return false, err
@@ -37,16 +27,12 @@ func AddCardReq(data storage.BankCardData) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	cyphData.FullName, err = storage.CypherData(ctx, data.FullName)
-	if err != nil {
-		return false, err
-	}
 
 	jsonData, err := json.Marshal(cyphData)
 	if err != nil {
 		return false, err
 	}
-	regURL := "http://" + storage.ServURL + "/api/user/card/add"
+	regURL := "http://" + storage.ServURL + "/api/user/text/add"
 	req, err := http.NewRequest("POST", regURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return false, err
@@ -61,7 +47,6 @@ func AddCardReq(data storage.BankCardData) (bool, error) {
 	}
 	defer response.Body.Close()
 
-	// Check the response status code
 	if response.StatusCode != http.StatusAccepted && response.StatusCode != http.StatusUnauthorized && response.StatusCode != http.StatusUnprocessableEntity {
 		return false, fmt.Errorf("unexpexteced reponse")
 	}
@@ -73,10 +58,10 @@ func AddCardReq(data storage.BankCardData) (bool, error) {
 	return true, nil
 }
 
-func SyncCardReq() (bool, error) {
+func SyncTextReq() (bool, error) {
 	var err error
 	ctx := context.WithValue(context.Background(), storage.UserLoginCtxKey, storage.UserLoginPw.Login)
-	storage.SyncClientHashes.BankCard, err = storage.BCLiteS.HashDatabaseData(ctx)
+	storage.SyncClientHashes.TextData, err = storage.TLiteS.HashDatabaseData(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -84,14 +69,13 @@ func SyncCardReq() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	regURL := "http://" + storage.ServURL + "/api/user/card/sync"
+	regURL := "http://" + storage.ServURL + "/api/user/text/sync"
 	req, err := http.NewRequest("GET", regURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return false, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Add("Authorization", storage.AuthToken)
-	// Send the request using http.Client
 	client := &http.Client{}
 	response, err := client.Do(req)
 	if err != nil {
@@ -101,7 +85,7 @@ func SyncCardReq() (bool, error) {
 	if response.StatusCode == http.StatusOK {
 		return true, nil
 	}
-	// Check the response status code
+
 	if response.StatusCode != http.StatusAccepted && response.StatusCode != http.StatusUnauthorized {
 		return false, fmt.Errorf("unexpexteced reponse")
 	}
@@ -112,16 +96,17 @@ func SyncCardReq() (bool, error) {
 			return false, err
 		}
 		defer req.Body.Close()
-		var respData []storage.BankCardData
+		var respData []storage.TextData
 		if err = json.Unmarshal(data, &respData); err != nil {
 			return false, err
 		}
-		for _, card := range respData {
+
+		for _, txt := range respData {
 			mut := sync.Mutex{}
 			mut.Lock()
 			defer mut.Unlock()
-			storage.BCLiteS.AddData(card)
-			err := storage.BCLiteS.CreateNewRecord(ctx)
+			storage.TLiteS.AddData(txt)
+			err := storage.TLiteS.CreateNewRecord(ctx)
 			if err != nil {
 				return false, err
 			}
