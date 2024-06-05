@@ -212,7 +212,6 @@ func (store *TextLiteStorage) GetAllRecords(ctx context.Context) (any, error) {
 				if err := rows.Scan(&store.Data.ID, &store.Data.Text, &store.Data.Comment); err != nil {
 					return result, err
 				}
-
 				resp.ID = store.Data.ID
 				resp.Text = store.Data.Text
 				resp.Comment = store.Data.Comment

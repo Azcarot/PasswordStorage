@@ -41,7 +41,7 @@ type UserData struct {
 }
 
 type LoginData struct {
-	ID       string `json:"id"`
+	ID       int    `json:"id"`
 	Login    string `json:"login"`
 	Password string `json:"pwd"`
 	Comment  string `json:"comment"`
@@ -51,13 +51,14 @@ type LoginData struct {
 }
 
 type LoginResponse struct {
+	ID       int    `json:"id"`
 	Login    string `json:"login"`
 	Password string `json:"pwd"`
 	Comment  string `json:"comment"`
 }
 
 type TextData struct {
-	ID      string `json:"id"`
+	ID      int    `json:"id"`
 	Text    string `json:"text"`
 	Comment string `json:"comment"`
 	User    string
@@ -66,13 +67,13 @@ type TextData struct {
 }
 
 type TextResponse struct {
-	ID      string `json:"id"`
+	ID      int    `json:"id"`
 	Text    string `json:"text"`
 	Comment string `json:"comment"`
 }
 
 type FileData struct {
-	ID       string `json:"id"`
+	ID       int    `json:"id"`
 	FileName string `json:"name"`
 	Data     string `json:"data"`
 	Comment  string `json:"comment"`
@@ -82,6 +83,7 @@ type FileData struct {
 }
 
 type FileResponse struct {
+	ID       int    `json:"id"`
 	FileName string `json:"name"`
 	Data     string `json:"data"`
 	Comment  string `json:"comment"`

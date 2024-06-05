@@ -101,6 +101,9 @@ func (m textMenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.choices[m.cursor] == textChoices.View {
 					return TextViewModel(), nil
 				}
+				if m.choices[m.cursor] == textChoices.Delete {
+					return TextDeleteModel(), nil
+				}
 			}
 		}
 	}

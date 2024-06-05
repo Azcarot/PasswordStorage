@@ -44,7 +44,6 @@ func (store *BankCardStorage) GetRecord(ctx context.Context) (any, error) {
 	if !ok {
 		return nil, ErrNoLogin
 	}
-	fmt.Println("Here ", store.Data.ID)
 	result := BankCardResponse{}
 
 	for {

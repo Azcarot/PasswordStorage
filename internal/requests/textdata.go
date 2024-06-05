@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"sync"
 
 	"github.com/Azcarot/PasswordStorage/internal/storage"
 )
@@ -47,6 +46,106 @@ func AddTextReq(data storage.TextData) (bool, error) {
 	}
 	defer response.Body.Close()
 
+	if response.StatusCode != http.StatusAccepted && response.StatusCode != http.StatusUnauthorized && response.StatusCode != http.StatusUnprocessableEntity {
+		return false, fmt.Errorf("unexpexteced reponse")
+	}
+
+	if response.StatusCode == http.StatusUnprocessableEntity {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+func DeleteTextReq(data storage.TextData) (bool, error) {
+	var b [16]byte
+	copy(b[:], storage.Secret)
+	ctx := context.WithValue(context.Background(), storage.EncryptionCtxKey, b)
+	var cyphData storage.TextData
+	var err error
+	cyphData.Text, err = storage.CypherData(ctx, data.Text)
+
+	if err != nil {
+		return false, err
+	}
+
+	cyphData.Comment, err = storage.CypherData(ctx, data.Comment)
+	if err != nil {
+		return false, err
+	}
+
+	cyphData.ID = data.ID
+
+	jsonData, err := json.Marshal(cyphData)
+	if err != nil {
+		return false, err
+	}
+	regURL := "http://" + storage.ServURL + "/api/user/text/delete"
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, regURL, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return false, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("Authorization", storage.AuthToken)
+	// Send the request using http.Client
+	client := &http.Client{}
+	response, err := client.Do(req)
+	if err != nil {
+		return false, err
+	}
+	defer response.Body.Close()
+
+	// Check the response status code
+	if response.StatusCode != http.StatusAccepted && response.StatusCode != http.StatusUnauthorized && response.StatusCode != http.StatusUnprocessableEntity {
+		return false, fmt.Errorf("unexpexteced reponse")
+	}
+
+	if response.StatusCode == http.StatusUnprocessableEntity {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+func UpdateTextReq(data storage.TextData) (bool, error) {
+	var b [16]byte
+	copy(b[:], storage.Secret)
+	ctx := context.WithValue(context.Background(), storage.EncryptionCtxKey, b)
+	var cyphData storage.TextData
+	var err error
+	cyphData.Text, err = storage.CypherData(ctx, data.Text)
+
+	if err != nil {
+		return false, err
+	}
+
+	cyphData.Comment, err = storage.CypherData(ctx, data.Comment)
+	if err != nil {
+		return false, err
+	}
+
+	cyphData.ID = data.ID
+
+	jsonData, err := json.Marshal(cyphData)
+	if err != nil {
+		return false, err
+	}
+	regURL := "http://" + storage.ServURL + "/api/user/text/update"
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, regURL, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return false, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("Authorization", storage.AuthToken)
+	// Send the request using http.Client
+	client := &http.Client{}
+	response, err := client.Do(req)
+	if err != nil {
+		return false, err
+	}
+	defer response.Body.Close()
+
+	// Check the response status code
 	if response.StatusCode != http.StatusAccepted && response.StatusCode != http.StatusUnauthorized && response.StatusCode != http.StatusUnprocessableEntity {
 		return false, fmt.Errorf("unexpexteced reponse")
 	}
@@ -102,16 +201,61 @@ func SyncTextReq() (bool, error) {
 		}
 
 		for _, txt := range respData {
-			mut := sync.Mutex{}
-			mut.Lock()
-			defer mut.Unlock()
 			storage.TLiteS.AddData(txt)
 			err := storage.TLiteS.CreateNewRecord(ctx)
 			if err != nil {
 				return false, err
 			}
 		}
+		newData, err := storage.TLiteS.GetAllRecords(ctx)
+
+		if err != nil {
+			return false, err
+		}
+		var newTextData []storage.TextData
+		for _, text := range newData.([]storage.TextResponse) {
+			var data storage.TextData
+			data.ID = text.ID
+			newTextData = append(newTextData, data)
+		}
+		excessTexts := compareUnorderedTextSlices(respData, newTextData)
+		for text := range excessTexts {
+			storage.TLiteS.AddData(text)
+			err = storage.TLiteS.DeleteRecord(ctx)
+			if err != nil {
+				return false, err
+			}
+		}
 		return true, nil
+
 	}
 	return false, err
+}
+
+func textSliceToMap(slice []storage.TextData) (map[int]storage.TextData, map[int]int) {
+	m := make(map[int]storage.TextData)
+	c := make(map[int]int)
+	for _, p := range slice {
+		m[p.ID] = p
+		c[p.ID]++
+	}
+	return m, c
+}
+
+// Получаем слайс структур банковских карт, которые есть только на клиенте
+func compareUnorderedTextSlices(s, c []storage.TextData) []storage.TextData {
+	if len(s) == len(c) {
+		return nil
+	}
+	var exids []storage.TextData
+	_, mapSIDs := textSliceToMap(s)
+	mapClient, mapCIDS := textSliceToMap(c)
+
+	for k, v := range mapCIDS {
+		if mapSIDs[k] != v {
+			exids = append(exids, mapClient[k])
+		}
+	}
+
+	return exids
 }

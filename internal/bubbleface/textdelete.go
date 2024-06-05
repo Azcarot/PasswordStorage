@@ -4,26 +4,25 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/Azcarot/PasswordStorage/internal/requests"
 	"github.com/Azcarot/PasswordStorage/internal/storage"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-type textViewModel struct {
+type textDeleteModel struct {
 	choices  []string
-	cursor   int
 	texts    []storage.TextResponse
+	cursor   int
 	selected map[int]struct{}
 }
 
-var selectedText storage.TextResponse
-
-func TextViewModel() textViewModel {
+func TextDeleteModel() textDeleteModel {
 	ctx := context.WithValue(context.Background(), storage.UserLoginCtxKey, storage.UserLoginPw.Login)
 	var choices []string
 	var texts []storage.TextResponse
 	data, err := storage.TLiteS.GetAllRecords(ctx)
 	if err != nil {
-		return textViewModel{
+		return textDeleteModel{
 
 			choices: []string{},
 
@@ -35,7 +34,7 @@ func TextViewModel() textViewModel {
 	ctx = context.WithValue(context.Background(), storage.EncryptionCtxKey, b)
 	choices, texts = deCypherText(ctx, data.([]storage.TextResponse))
 
-	return textViewModel{
+	return textDeleteModel{
 
 		choices:  choices,
 		texts:    texts,
@@ -43,12 +42,13 @@ func TextViewModel() textViewModel {
 	}
 }
 
-func (m textViewModel) Init() tea.Cmd {
+func (m textDeleteModel) Init() tea.Cmd {
 	return nil
 }
 
-func (m textViewModel) View() string {
-	s := "Main text menu, please chose your action:\n\n"
+func (m textDeleteModel) View() string {
+	newheader = "Please select text to delete"
+	s := newheader + "\n\n"
 
 	for i, choice := range m.choices {
 
@@ -70,7 +70,7 @@ func (m textViewModel) View() string {
 	return s
 }
 
-func (m textViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m textDeleteModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 
 	case tea.KeyMsg:
@@ -89,8 +89,10 @@ func (m textViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.cursor < len(m.choices)-1 {
 				m.cursor++
 			}
+
 		case "ctrl+b":
-			return TextMenuModel(), nil
+			return TextMenuModel(), tea.ClearScreen
+
 		case "enter", " ":
 			_, ok := m.selected[m.cursor]
 
@@ -100,33 +102,37 @@ func (m textViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				m.selected[m.cursor] = struct{}{}
 				selectedText = m.texts[m.cursor]
-				return UpdateTextModel(), nil
+				var textData storage.TextData
+
+				textData.Text = selectedText.Text
+				textData.Comment = selectedText.Comment
+				textData.ID = selectedText.ID
+				err := storage.TLiteS.AddData(textData)
+				if err != nil {
+					return TextDeleteModel(), nil
+				}
+
+				pauseTicker <- true
+
+				defer func() { resumeTicker <- true }()
+
+				ok, err := requests.DeleteTextReq(textData)
+
+				if err != nil {
+					newheader = "Something went wrong, please try again"
+					return TextDeleteModel(), nil
+				}
+				if !ok {
+					newheader = "Wrond text data, try again"
+					return TextDeleteModel(), nil
+				}
+				newheader = "Text succsesfully deleted!"
+				return TextDeleteModel(), tea.ClearScreen
 
 			}
+
 		}
 	}
 
 	return m, nil
-}
-
-func deCypherText(ctx context.Context, cards []storage.TextResponse) ([]string, []storage.TextResponse) {
-	var err error
-	var choices []string
-	var datas []storage.TextResponse
-	for _, data := range cards {
-		data.Text, err = storage.Dechypher(ctx, data.Text)
-		if err != nil {
-			continue
-		}
-
-		data.Comment, err = storage.Dechypher(ctx, data.Comment)
-		if err != nil {
-			continue
-		}
-
-		str := fmt.Sprintf("Your text: %s \nComment: %s", data.Text, data.Comment)
-		choices = append(choices, str)
-		datas = append(datas, data)
-	}
-	return choices, datas
 }

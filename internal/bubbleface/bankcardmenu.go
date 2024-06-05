@@ -106,6 +106,9 @@ func (m cardMenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.choices[m.cursor] == bankChoices.View {
 					return CardViewModel(), nil
 				}
+				if m.choices[m.cursor] == bankChoices.Delete {
+					return CardDeleteModel(), nil
+				}
 			}
 		}
 	}

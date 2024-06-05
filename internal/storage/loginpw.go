@@ -188,7 +188,7 @@ func (store *LoginPwStorage) GetAllRecords(ctx context.Context) (any, error) {
 		case <-ctx.Done():
 			return result, errTimeout
 		default:
-			query := `SELECT login, pw, comment
+			query := `SELECT id, login, pw, comment
 	FROM login_pw
 	WHERE username = $1
 	ORDER BY id DESC`
@@ -200,7 +200,7 @@ func (store *LoginPwStorage) GetAllRecords(ctx context.Context) (any, error) {
 			defer rows.Close()
 			for rows.Next() {
 				var resp LoginResponse
-				if err := rows.Scan(&store.Data.Login, &store.Data.Password, &store.Data.Comment); err != nil {
+				if err := rows.Scan(&store.Data.ID, &store.Data.Login, &store.Data.Password, &store.Data.Comment); err != nil {
 					return result, err
 				}
 				err := store.DeCypherLPWData(ctx)
@@ -208,6 +208,7 @@ func (store *LoginPwStorage) GetAllRecords(ctx context.Context) (any, error) {
 					return result, err
 				}
 				resp.Login = store.Data.Login
+				resp.ID = store.Data.ID
 				resp.Password = store.Data.Password
 				resp.Comment = store.Data.Comment
 				result = append(result, resp)

@@ -95,6 +95,7 @@ func SyncTextData(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
 	jsonData, err := json.Marshal(allData)
 	if err != nil {
 

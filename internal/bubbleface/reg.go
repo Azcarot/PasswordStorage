@@ -38,6 +38,9 @@ type regmodel struct {
 	err     error
 }
 
+var pauseTicker chan bool
+var resumeTicker chan bool
+
 func AuthRegModel() regmodel {
 	var inputs []textinput.Model = make([]textinput.Model, 2)
 	inputs[login] = textinput.New()
@@ -86,8 +89,10 @@ func (m regmodel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				storage.UserLoginPw.Login = req.Login
 				storage.UserLoginPw.Password = req.Password
-				ticker := time.NewTicker(4 * time.Second)
+				ticker := time.NewTicker(5 * time.Second)
 				quit := make(chan struct{})
+				pauseTicker = make(chan bool)
+				resumeTicker = make(chan bool)
 				go func() {
 					for {
 						select {
@@ -97,6 +102,8 @@ func (m regmodel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						case <-quit:
 							ticker.Stop()
 							return
+						case <-pauseTicker:
+							<-resumeTicker
 						}
 					}
 				}()

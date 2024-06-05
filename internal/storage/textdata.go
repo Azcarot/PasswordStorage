@@ -185,7 +185,7 @@ func (store *TextStorage) GetAllRecords(ctx context.Context) (any, error) {
 		case <-ctx.Done():
 			return result, errTimeout
 		default:
-			query := `SELECT text, comment
+			query := `SELECT id, text, comment
 	FROM text_data
 	WHERE username = $1
 	ORDER BY id DESC`
@@ -197,13 +197,14 @@ func (store *TextStorage) GetAllRecords(ctx context.Context) (any, error) {
 			defer rows.Close()
 			for rows.Next() {
 				var resp TextResponse
-				if err := rows.Scan(&store.Data.Text, &store.Data.Comment); err != nil {
+				if err := rows.Scan(&store.Data.ID, &store.Data.Text, &store.Data.Comment); err != nil {
 					return result, err
 				}
 				err := store.DeCypherTextData(ctx)
 				if err != nil {
 					return result, err
 				}
+				resp.ID = store.Data.ID
 				resp.Text = store.Data.Text
 				resp.Comment = store.Data.Comment
 				result = append(result, resp)

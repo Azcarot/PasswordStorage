@@ -192,7 +192,7 @@ func (store *FileStorage) GetAllRecords(ctx context.Context) (any, error) {
 		case <-ctx.Done():
 			return result, errTimeout
 		default:
-			query := `SELECT file_name, data, comment
+			query := `SELECT id, file_name, data, comment
 	FROM file_data
 	WHERE username = $1
 	ORDER BY id DESC`
@@ -204,7 +204,7 @@ func (store *FileStorage) GetAllRecords(ctx context.Context) (any, error) {
 			defer rows.Close()
 			for rows.Next() {
 				var resp FileResponse
-				if err := rows.Scan(&store.Data.FileName, &store.Data.Data, &store.Data.Comment); err != nil {
+				if err := rows.Scan(&store.Data.ID, &store.Data.FileName, &store.Data.Data, &store.Data.Comment); err != nil {
 					return result, err
 				}
 				err := store.DeCypherFileData(ctx)
@@ -212,6 +212,7 @@ func (store *FileStorage) GetAllRecords(ctx context.Context) (any, error) {
 					return result, err
 				}
 				resp.FileName = store.Data.FileName
+				resp.ID = store.Data.ID
 				resp.Data = store.Data.Data
 				resp.Comment = store.Data.Comment
 				result = append(result, resp)

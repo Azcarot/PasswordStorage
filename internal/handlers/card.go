@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"sync"
@@ -151,7 +150,6 @@ func UpdateCard(res http.ResponseWriter, req *http.Request) {
 		}
 		err = storage.BCST.AddData(bankData)
 		if err != nil {
-			fmt.Println(err)
 			res.WriteHeader(http.StatusUnprocessableEntity)
 			return
 		}
