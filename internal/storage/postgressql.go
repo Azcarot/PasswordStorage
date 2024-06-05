@@ -88,7 +88,7 @@ type FileResponse struct {
 }
 
 type BankCardData struct {
-	ID         string `json:"id"`
+	ID         int    `json:"id"`
 	CardNumber string `json:"number"`
 	Cvc        string `json:"cvc"`
 	ExpDate    string `json:"exp"`
@@ -100,7 +100,7 @@ type BankCardData struct {
 }
 
 type BankCardResponse struct {
-	ID         string `json:"id"`
+	ID         int    `json:"id"`
 	CardNumber string `json:"number"`
 	Cvc        string `json:"cvc"`
 	ExpDate    string `json:"exp"`
@@ -271,7 +271,6 @@ func connectToDB(f utils.Flags) error {
 }
 
 func (store *BankCardStorage) AddData(data any) error {
-
 	newdata, ok := data.(BankCardData)
 	if !ok {
 		return fmt.Errorf("error while asserting data to bank card type")

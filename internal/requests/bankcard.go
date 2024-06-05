@@ -73,6 +73,69 @@ func AddCardReq(data storage.BankCardData) (bool, error) {
 	return true, nil
 }
 
+func UpdateCardReq(data storage.BankCardData) (bool, error) {
+	var b [16]byte
+	copy(b[:], storage.Secret)
+	ctx := context.WithValue(context.Background(), storage.EncryptionCtxKey, b)
+	var cyphData storage.BankCardData
+	var err error
+	cyphData.CardNumber, err = storage.CypherData(ctx, data.CardNumber)
+
+	if err != nil {
+		return false, err
+	}
+	cyphData.ExpDate, err = storage.CypherData(ctx, data.ExpDate)
+
+	if err != nil {
+		return false, err
+	}
+	cyphData.Cvc, err = storage.CypherData(ctx, data.Cvc)
+
+	if err != nil {
+		return false, err
+	}
+	cyphData.Comment, err = storage.CypherData(ctx, data.Comment)
+	if err != nil {
+		return false, err
+	}
+	cyphData.FullName, err = storage.CypherData(ctx, data.FullName)
+	if err != nil {
+		return false, err
+	}
+
+	cyphData.ID = data.ID
+
+	jsonData, err := json.Marshal(cyphData)
+	if err != nil {
+		return false, err
+	}
+	regURL := "http://" + storage.ServURL + "/api/user/card/update"
+	req, err := http.NewRequest("POST", regURL, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return false, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("Authorization", storage.AuthToken)
+	// Send the request using http.Client
+	client := &http.Client{}
+	response, err := client.Do(req)
+	if err != nil {
+		return false, err
+	}
+	defer response.Body.Close()
+
+	// Check the response status code
+	if response.StatusCode != http.StatusAccepted && response.StatusCode != http.StatusUnauthorized && response.StatusCode != http.StatusUnprocessableEntity {
+		return false, fmt.Errorf("unexpexteced reponse")
+	}
+
+	if response.StatusCode == http.StatusUnprocessableEntity {
+		return false, nil
+	}
+
+	return true, nil
+}
+
 func SyncCardReq() (bool, error) {
 	var err error
 	ctx := context.WithValue(context.Background(), storage.UserLoginCtxKey, storage.UserLoginPw.Login)

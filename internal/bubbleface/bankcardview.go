@@ -10,13 +10,21 @@ import (
 
 type cardViewModel struct {
 	choices  []string
+	cards    []storage.BankCardResponse
 	cursor   int
 	selected map[int]struct{}
 }
 
+type MsgSendData struct {
+	Data string
+}
+
+var selectedCard storage.BankCardResponse
+
 func CardViewModel() cardViewModel {
 	ctx := context.WithValue(context.Background(), storage.UserLoginCtxKey, storage.UserLoginPw.Login)
 	var choices []string
+	var cards []storage.BankCardResponse
 	data, err := storage.BCLiteS.GetAllRecords(ctx)
 	if err != nil {
 		return cardViewModel{
@@ -29,12 +37,12 @@ func CardViewModel() cardViewModel {
 	var b [16]byte
 	copy(b[:], storage.Secret)
 	ctx = context.WithValue(context.Background(), storage.EncryptionCtxKey, b)
-	choices = deCypherBankCard(ctx, data.([]storage.BankCardResponse))
+	choices, cards = deCypherBankCard(ctx, data.([]storage.BankCardResponse))
 
 	return cardViewModel{
 
-		choices: choices,
-
+		choices:  choices,
+		cards:    cards,
 		selected: make(map[int]struct{}),
 	}
 }
@@ -86,6 +94,9 @@ func (m cardViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.cursor++
 			}
 
+		case "ctrl+b":
+			return CardMenuModel(), tea.ClearScreen
+
 		case "enter", " ":
 			_, ok := m.selected[m.cursor]
 
@@ -94,20 +105,23 @@ func (m cardViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 
 				m.selected[m.cursor] = struct{}{}
-				if m.choices[m.cursor] == bankChoices.Add {
-					return AddCardModel(), nil
-				}
+				selectedCard = m.cards[m.cursor]
+				return UpdateCardModel(), nil
+
 			}
+
 		}
 	}
 
 	return m, nil
 }
 
-func deCypherBankCard(ctx context.Context, cards []storage.BankCardResponse) []string {
+func deCypherBankCard(ctx context.Context, cards []storage.BankCardResponse) ([]string, []storage.BankCardResponse) {
 	var err error
 	var choices []string
+	var datas []storage.BankCardResponse
 	for _, data := range cards {
+
 		data.CardNumber, err = storage.Dechypher(ctx, data.CardNumber)
 		if err != nil {
 			continue
@@ -130,7 +144,9 @@ func deCypherBankCard(ctx context.Context, cards []storage.BankCardResponse) []s
 		}
 		str := fmt.Sprintf("CCN: %s \nCVC: %s   ExpDate: %s   FillName: %s\nComment: %s", data.CardNumber, data.Cvc, data.ExpDate, data.FullName, data.Comment)
 		choices = append(choices, str)
+		datas = append(datas, data)
 
 	}
-	return choices
+
+	return choices, datas
 }
