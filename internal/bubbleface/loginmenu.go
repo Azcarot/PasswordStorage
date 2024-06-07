@@ -2,6 +2,7 @@ package face
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/Azcarot/PasswordStorage/internal/handlers"
@@ -55,6 +56,7 @@ func (m loginmodel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				var req handlers.LoginRequest
 				req.Login = (m.inputs[login].Value())
 				req.Password = (m.inputs[pwd].Value())
+				req.Password = strings.TrimSpace(req.Password)
 				ok, err := requests.LoginReq(req)
 				if err != nil {
 					newheader = "Please enter your credentials"
@@ -77,6 +79,8 @@ func (m loginmodel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 							requests.SyncCardReq()
 							requests.SyncTextReq()
+							requests.SyncLPWReq()
+							requests.SyncFileReq()
 						case <-quit:
 							ticker.Stop()
 							return

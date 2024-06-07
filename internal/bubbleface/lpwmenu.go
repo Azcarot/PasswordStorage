@@ -10,42 +10,43 @@ import (
 )
 
 const (
-	txt = iota
-	tcmt
+	lgn = iota
+	psw
+	lcmt
 )
 
-type textMenuModel struct {
+type lpwMenuModel struct {
 	choices  []string
 	cursor   int
 	selected map[int]struct{}
 }
-type textCho struct {
+type lpwCho struct {
 	Add    string
 	View   string
 	Delete string
 }
 
-var textChoices = textCho{
-	Add:    "Add New Text",
-	View:   "View/Update text data",
-	Delete: "Delete text",
+var lpwChoices = lpwCho{
+	Add:    "Add New login/password",
+	View:   "View/Updatelogin/password data",
+	Delete: "Delete login/password",
 }
 
-func TextMenuModel() textMenuModel {
-	return textMenuModel{
+func LPWMenuModel() lpwMenuModel {
+	return lpwMenuModel{
 
-		choices: []string{textChoices.Add, textChoices.View, textChoices.Delete},
+		choices: []string{lpwChoices.Add, lpwChoices.View, lpwChoices.Delete},
 
 		selected: make(map[int]struct{}),
 	}
 }
 
-func (m textMenuModel) Init() tea.Cmd {
+func (m lpwMenuModel) Init() tea.Cmd {
 	return nil
 }
 
-func (m textMenuModel) View() string {
-	s := "Main text menu, please chose your action:\n\n"
+func (m lpwMenuModel) View() string {
+	s := "Main login/password menu, please chose your action:\n\n"
 
 	for i, choice := range m.choices {
 
@@ -67,7 +68,7 @@ func (m textMenuModel) View() string {
 	return s
 }
 
-func (m textMenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m lpwMenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 
 	case tea.KeyMsg:
@@ -86,7 +87,6 @@ func (m textMenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.cursor < len(m.choices)-1 {
 				m.cursor++
 			}
-
 		case "ctrl+b":
 			return MainMenuModel(), nil
 
@@ -98,14 +98,14 @@ func (m textMenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 
 				m.selected[m.cursor] = struct{}{}
-				if m.choices[m.cursor] == textChoices.Add {
-					return AddTextModel(), nil
+				if m.choices[m.cursor] == lpwChoices.Add {
+					return AddLPWModel(), nil
 				}
-				if m.choices[m.cursor] == textChoices.View {
-					return TextViewModel(), nil
+				if m.choices[m.cursor] == lpwChoices.View {
+					return LPWViewModel(), nil
 				}
-				if m.choices[m.cursor] == textChoices.Delete {
-					return TextDeleteModel(), nil
+				if m.choices[m.cursor] == lpwChoices.Delete {
+					return LPWDeleteModel(), nil
 				}
 			}
 		}
@@ -114,40 +114,46 @@ func (m textMenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-type textModel struct {
+type lpwModel struct {
 	inputs  []textinput.Model
 	focused int
 	err     error
 }
 
-func AddTextModel() textModel {
-	var inputs []textinput.Model = make([]textinput.Model, 2)
-	newheader = "Please insert text data:"
-	inputs[txt] = textinput.New()
-	inputs[txt].Placeholder = "Some text **************"
-	inputs[txt].Focus()
-	inputs[txt].CharLimit = 100
-	inputs[txt].Width = 30
-	inputs[txt].Prompt = ""
+func AddLPWModel() lpwModel {
+	var inputs []textinput.Model = make([]textinput.Model, 3)
+	newheader = "Please insert login/password data:"
+	inputs[lgn] = textinput.New()
+	inputs[lgn].Placeholder = "Login **************"
+	inputs[lgn].Focus()
+	inputs[lgn].CharLimit = 100
+	inputs[lgn].Width = 30
+	inputs[lgn].Prompt = ""
 
-	inputs[tcmt] = textinput.New()
-	inputs[tcmt].Placeholder = "Some comment"
-	inputs[tcmt].CharLimit = 100
-	inputs[tcmt].Width = 40
-	inputs[tcmt].Prompt = ""
+	inputs[psw] = textinput.New()
+	inputs[psw].Placeholder = "Password **************"
+	inputs[psw].CharLimit = 100
+	inputs[psw].Width = 30
+	inputs[psw].Prompt = ""
 
-	return textModel{
+	inputs[lcmt] = textinput.New()
+	inputs[lcmt].Placeholder = "Some comment"
+	inputs[lcmt].CharLimit = 100
+	inputs[lcmt].Width = 40
+	inputs[lcmt].Prompt = ""
+
+	return lpwModel{
 		inputs:  inputs,
 		focused: 0,
 		err:     nil,
 	}
 }
 
-func (m textModel) Init() tea.Cmd {
+func (m lpwModel) Init() tea.Cmd {
 	return textinput.Blink
 }
 
-func (m textModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m lpwModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd = make([]tea.Cmd, len(m.inputs))
 
 	switch msg := msg.(type) {
@@ -155,21 +161,22 @@ func (m textModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.Type {
 		case tea.KeyEnter:
 			if m.focused == len(m.inputs)-1 {
-				var req storage.TextData
-				req.Text = (m.inputs[txt].Value())
-				req.Comment = (m.inputs[tcmt].Value())
-				ok, err := requests.AddTextReq(req)
+				var req storage.LoginData
+				req.Login = (m.inputs[lgn].Value())
+				req.Password = (m.inputs[psw].Value())
+				req.Comment = (m.inputs[lcmt].Value())
+				ok, err := requests.AddLPWReq(req)
 
 				if err != nil {
 					newheader = "Something went wrong, please try again"
-					return AddTextModel(), nil
+					return AddLPWModel(), nil
 				}
 				if !ok {
 					newheader = "Wrond data, please try again"
-					return AddTextModel(), nil
+					return AddLPWModel(), nil
 				}
 				newheader = "Text succsesfully saved!"
-				return AddTextModel(), tea.ClearScreen
+				return AddLPWModel(), tea.ClearScreen
 			}
 			m.nextInput()
 		case tea.KeyCtrlC, tea.KeyEsc:
@@ -179,7 +186,7 @@ func (m textModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyTab, tea.KeyCtrlN:
 			m.nextInput()
 		case tea.KeyCtrlB:
-			return TextMenuModel(), tea.ClearScreen
+			return LPWMenuModel(), tea.ClearScreen
 
 		}
 
@@ -199,15 +206,17 @@ func (m textModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m textModel) View() string {
+func (m lpwModel) View() string {
 	return fmt.Sprintf(
 		` %s
 
  %s
  %s
 
+ %s
+ %s
 
- %s  
+ %s
  %s
 
  %s
@@ -216,19 +225,21 @@ func (m textModel) View() string {
  press ctrl+B to go to previous menu
 `,
 		newheader,
-		inputStyle.Width(30).Render("Your Text"),
-		m.inputs[txt].View(),
+		inputStyle.Width(30).Render("Your login"),
+		m.inputs[lgn].View(),
+		inputStyle.Width(30).Render("Your password"),
+		m.inputs[psw].View(),
 		inputStyle.Width(30).Render("Comment"),
-		m.inputs[tcmt].View(),
+		m.inputs[lcmt].View(),
 		continueStyle.Render("Continue ->"),
 	) + "\n"
 }
 
-func (m *textModel) nextInput() {
+func (m *lpwModel) nextInput() {
 	m.focused = (m.focused + 1) % len(m.inputs)
 }
 
-func (m *textModel) prevInput() {
+func (m *lpwModel) prevInput() {
 	m.focused--
 
 	if m.focused < 0 {

@@ -75,6 +75,7 @@ type TextResponse struct {
 type FileData struct {
 	ID       int    `json:"id"`
 	FileName string `json:"name"`
+	Path     string `json:"path"`
 	Data     string `json:"data"`
 	Comment  string `json:"comment"`
 	User     string
@@ -85,6 +86,7 @@ type FileData struct {
 type FileResponse struct {
 	ID       int    `json:"id"`
 	FileName string `json:"name"`
+	Path     string `json:"path"`
 	Data     string `json:"data"`
 	Comment  string `json:"comment"`
 }
@@ -305,6 +307,40 @@ func (store *BankCardLiteStorage) GetData() any {
 	return newdata
 }
 
+func (store *LPWLiteStorage) AddData(data any) error {
+
+	newdata, ok := data.(LoginData)
+	if !ok {
+		return fmt.Errorf("error while asserting data to bank card type")
+	}
+	store.Data = newdata
+	return nil
+}
+
+func (store *LPWLiteStorage) GetData() any {
+
+	newdata := store.Data
+
+	return newdata
+}
+
+func (store *FileLiteStorage) AddData(data any) error {
+
+	newdata, ok := data.(FileData)
+	if !ok {
+		return fmt.Errorf("error while asserting data to file type")
+	}
+	store.Data = newdata
+	return nil
+}
+
+func (store *FileLiteStorage) GetData() any {
+
+	newdata := store.Data
+
+	return newdata
+}
+
 func (store *TextLiteStorage) AddData(data any) error {
 
 	newdata, ok := data.(TextData)
@@ -467,6 +503,7 @@ func (store SQLStore) CreateTablesForGoKeeper() {
 	query = `CREATE TABLE IF NOT EXISTS file_data(
 		id SERIAL NOT NULL PRIMARY KEY,
 		file_name TEXT NOT NULL,
+		file_path TEXT NOT NULL,
 		data TEXT NOT NULL,
 		comment TEXT,
 		username TEXT NOT NULL,

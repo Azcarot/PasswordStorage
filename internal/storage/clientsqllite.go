@@ -84,6 +84,8 @@ func connectToLiteDB(f utils.Flags) error {
 	LiteST = MakeLiteConn(LiteDB)
 	BCLiteS = NewBCLiteStorage(BCLiteS, LiteDB)
 	TLiteS = NewTLiteStorage(TLiteS, LiteDB)
+	LPWLiteS = NewLPLiteStorage(LPWLiteS, LiteDB)
+	FLiteS = NewFLiteStorage(FLiteS, LiteDB)
 	return err
 }
 
@@ -168,6 +170,7 @@ func (store SQLLiteStore) CreateTablesForGoKeeper() {
 	query = `CREATE TABLE IF NOT EXISTS file_data(
 		id SERIAL NOT NULL PRIMARY KEY,
 		file_name TEXT NOT NULL,
+		file_path TEXT NOT NULL,
 		data TEXT NOT NULL,
 		comment TEXT,
 		username TEXT NOT NULL,

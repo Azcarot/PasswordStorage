@@ -204,6 +204,12 @@ func (m mainMenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.choices[m.cursor] == mainChoices.Text {
 					return TextMenuModel(), nil
 				}
+				if m.choices[m.cursor] == mainChoices.Login {
+					return LPWMenuModel(), nil
+				}
+				if m.choices[m.cursor] == mainChoices.File {
+					return FileMenuModel(), nil
+				}
 			}
 		}
 	}

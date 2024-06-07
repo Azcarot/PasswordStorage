@@ -92,6 +92,9 @@ func (m cardMenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.cursor++
 			}
 
+		case "ctrl+b":
+			return MainMenuModel(), nil
+
 		case "enter", " ":
 			_, ok := m.selected[m.cursor]
 

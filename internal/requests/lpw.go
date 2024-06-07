@@ -11,32 +11,24 @@ import (
 	"github.com/Azcarot/PasswordStorage/internal/storage"
 )
 
-func AddCardReq(data storage.BankCardData) (bool, error) {
+func AddLPWReq(data storage.LoginData) (bool, error) {
 	var b [16]byte
 	copy(b[:], storage.Secret)
 	ctx := context.WithValue(context.Background(), storage.EncryptionCtxKey, b)
-	var cyphData storage.BankCardData
+	var cyphData storage.LoginData
 	var err error
-	cyphData.CardNumber, err = storage.CypherData(ctx, data.CardNumber)
+	cyphData.Login, err = storage.CypherData(ctx, data.Login)
 
 	if err != nil {
 		return false, err
 	}
-	cyphData.ExpDate, err = storage.CypherData(ctx, data.ExpDate)
+	cyphData.Password, err = storage.CypherData(ctx, data.Password)
 
 	if err != nil {
 		return false, err
 	}
-	cyphData.Cvc, err = storage.CypherData(ctx, data.Cvc)
 
-	if err != nil {
-		return false, err
-	}
 	cyphData.Comment, err = storage.CypherData(ctx, data.Comment)
-	if err != nil {
-		return false, err
-	}
-	cyphData.FullName, err = storage.CypherData(ctx, data.FullName)
 	if err != nil {
 		return false, err
 	}
@@ -45,8 +37,8 @@ func AddCardReq(data storage.BankCardData) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	regURL := "http://" + storage.ServURL + "/api/user/card/add"
-	req, err := http.NewRequest("POST", regURL, bytes.NewBuffer(jsonData))
+	regURL := "http://" + storage.ServURL + "/api/user/lpw/add"
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, regURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return false, err
 	}
@@ -72,32 +64,24 @@ func AddCardReq(data storage.BankCardData) (bool, error) {
 	return true, nil
 }
 
-func UpdateCardReq(data storage.BankCardData) (bool, error) {
+func UpdateLPWReq(data storage.LoginData) (bool, error) {
 	var b [16]byte
 	copy(b[:], storage.Secret)
 	ctx := context.WithValue(context.Background(), storage.EncryptionCtxKey, b)
-	var cyphData storage.BankCardData
+	var cyphData storage.LoginData
 	var err error
-	cyphData.CardNumber, err = storage.CypherData(ctx, data.CardNumber)
+	cyphData.Login, err = storage.CypherData(ctx, data.Login)
 
 	if err != nil {
 		return false, err
 	}
-	cyphData.ExpDate, err = storage.CypherData(ctx, data.ExpDate)
+	cyphData.Password, err = storage.CypherData(ctx, data.Password)
 
 	if err != nil {
 		return false, err
 	}
-	cyphData.Cvc, err = storage.CypherData(ctx, data.Cvc)
 
-	if err != nil {
-		return false, err
-	}
 	cyphData.Comment, err = storage.CypherData(ctx, data.Comment)
-	if err != nil {
-		return false, err
-	}
-	cyphData.FullName, err = storage.CypherData(ctx, data.FullName)
 	if err != nil {
 		return false, err
 	}
@@ -108,8 +92,8 @@ func UpdateCardReq(data storage.BankCardData) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	regURL := "http://" + storage.ServURL + "/api/user/card/update"
-	req, err := http.NewRequest("POST", regURL, bytes.NewBuffer(jsonData))
+	regURL := "http://" + storage.ServURL + "/api/user/lpw/update"
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, regURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return false, err
 	}
@@ -135,32 +119,24 @@ func UpdateCardReq(data storage.BankCardData) (bool, error) {
 	return true, nil
 }
 
-func DeleteCardReq(data storage.BankCardData) (bool, error) {
+func DeleteLPWReq(data storage.LoginData) (bool, error) {
 	var b [16]byte
 	copy(b[:], storage.Secret)
 	ctx := context.WithValue(context.Background(), storage.EncryptionCtxKey, b)
-	var cyphData storage.BankCardData
+	var cyphData storage.LoginData
 	var err error
-	cyphData.CardNumber, err = storage.CypherData(ctx, data.CardNumber)
+	cyphData.Login, err = storage.CypherData(ctx, data.Login)
 
 	if err != nil {
 		return false, err
 	}
-	cyphData.ExpDate, err = storage.CypherData(ctx, data.ExpDate)
+	cyphData.Password, err = storage.CypherData(ctx, data.Password)
 
 	if err != nil {
 		return false, err
 	}
-	cyphData.Cvc, err = storage.CypherData(ctx, data.Cvc)
 
-	if err != nil {
-		return false, err
-	}
 	cyphData.Comment, err = storage.CypherData(ctx, data.Comment)
-	if err != nil {
-		return false, err
-	}
-	cyphData.FullName, err = storage.CypherData(ctx, data.FullName)
 	if err != nil {
 		return false, err
 	}
@@ -171,8 +147,9 @@ func DeleteCardReq(data storage.BankCardData) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	regURL := "http://" + storage.ServURL + "/api/user/card/delete"
-	req, err := http.NewRequest("POST", regURL, bytes.NewBuffer(jsonData))
+
+	regURL := "http://" + storage.ServURL + "/api/user/lpw/delete"
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, regURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return false, err
 	}
@@ -198,10 +175,10 @@ func DeleteCardReq(data storage.BankCardData) (bool, error) {
 	return true, nil
 }
 
-func SyncCardReq() (bool, error) {
+func SyncLPWReq() (bool, error) {
 	var err error
 	ctx := context.WithValue(context.Background(), storage.UserLoginCtxKey, storage.UserLoginPw.Login)
-	storage.SyncClientHashes.BankCard, err = storage.BCLiteS.HashDatabaseData(ctx)
+	storage.SyncClientHashes.LoginPw, err = storage.LPWLiteS.HashDatabaseData(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -209,7 +186,7 @@ func SyncCardReq() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	regURL := "http://" + storage.ServURL + "/api/user/card/sync"
+	regURL := "http://" + storage.ServURL + "/api/user/lpw/sync"
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, regURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return false, err
@@ -237,34 +214,34 @@ func SyncCardReq() (bool, error) {
 			return false, err
 		}
 		defer req.Body.Close()
-		var respData []storage.BankCardData
+		var respData []storage.LoginData
 		if err = json.Unmarshal(data, &respData); err != nil {
 			return false, err
 		}
 
-		for _, card := range respData {
+		for _, lpw := range respData {
 
-			storage.BCLiteS.AddData(card)
-			err := storage.BCLiteS.CreateNewRecord(ctx)
+			storage.LPWLiteS.AddData(lpw)
+			err := storage.LPWLiteS.CreateNewRecord(ctx)
 			if err != nil {
 				return false, err
 			}
 		}
-		newData, err := storage.BCLiteS.GetAllRecords(ctx)
+		newData, err := storage.LPWLiteS.GetAllRecords(ctx)
 
 		if err != nil {
 			return false, err
 		}
-		var newBankData []storage.BankCardData
-		for _, card := range newData.([]storage.BankCardResponse) {
-			var data storage.BankCardData
-			data.ID = card.ID
-			newBankData = append(newBankData, data)
+		var newLPWData []storage.LoginData
+		for _, lpw := range newData.([]storage.LoginResponse) {
+			var data storage.LoginData
+			data.ID = lpw.ID
+			newLPWData = append(newLPWData, data)
 		}
-		excessCards := compareUnorderedCardSlices(respData, newBankData)
-		for card := range excessCards {
-			storage.BCLiteS.AddData(card)
-			err = storage.BCLiteS.DeleteRecord(ctx)
+		excessLPWs := compareUnorderedLPWSlices(respData, newLPWData)
+		for lpw := range excessLPWs {
+			storage.LPWLiteS.AddData(lpw)
+			err = storage.LPWLiteS.DeleteRecord(ctx)
 			if err != nil {
 				return false, err
 			}
@@ -274,8 +251,8 @@ func SyncCardReq() (bool, error) {
 	return false, err
 }
 
-func cardSliceToMap(slice []storage.BankCardData) (map[int]storage.BankCardData, map[int]int) {
-	m := make(map[int]storage.BankCardData)
+func lpwSliceToMap(slice []storage.LoginData) (map[int]storage.LoginData, map[int]int) {
+	m := make(map[int]storage.LoginData)
 	c := make(map[int]int)
 	for _, p := range slice {
 		m[p.ID] = p
@@ -284,14 +261,14 @@ func cardSliceToMap(slice []storage.BankCardData) (map[int]storage.BankCardData,
 	return m, c
 }
 
-// Получаем слайс структур банковских карт, которые есть только на клиенте
-func compareUnorderedCardSlices(s, c []storage.BankCardData) []storage.BankCardData {
+// Получаем слайс структур login/pw, которые есть только на клиенте
+func compareUnorderedLPWSlices(s, c []storage.LoginData) []storage.LoginData {
 	if len(s) == len(c) {
 		return nil
 	}
-	var exids []storage.BankCardData
-	_, mapSIDs := cardSliceToMap(s)
-	mapClient, mapCIDS := cardSliceToMap(c)
+	var exids []storage.LoginData
+	_, mapSIDs := lpwSliceToMap(s)
+	mapClient, mapCIDS := lpwSliceToMap(c)
 
 	for k, v := range mapCIDS {
 		if mapSIDs[k] != v {
