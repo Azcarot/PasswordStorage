@@ -15,6 +15,8 @@ type textUpdateModel struct {
 	err     error
 }
 
+// UpdateTextModel - основная функция для построения и работы с
+// c сохраненными текстовыми данными
 func UpdateTextModel() textUpdateModel {
 	var inputs []textinput.Model = make([]textinput.Model, 2)
 	newheader = "Please check text data:"

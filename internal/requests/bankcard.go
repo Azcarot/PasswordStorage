@@ -1,3 +1,6 @@
+// Package requests - модуль с запросами к серверу
+// Включает запросы на регистрацию/авторизацию пользователя
+// Создание/обновление/Удаление/Синхронизация всех данных пользователя
 package requests
 
 import (
@@ -11,6 +14,7 @@ import (
 	"github.com/Azcarot/PasswordStorage/internal/storage"
 )
 
+// AddCardReq - запрос на создание банковской карты на сервере
 func AddCardReq(data storage.BankCardData) (bool, error) {
 	var b [16]byte
 	copy(b[:], storage.Secret)
@@ -72,6 +76,7 @@ func AddCardReq(data storage.BankCardData) (bool, error) {
 	return true, nil
 }
 
+// UpdateCardReq - запрос на обновление банковской карты на сервере
 func UpdateCardReq(data storage.BankCardData) (bool, error) {
 	var b [16]byte
 	copy(b[:], storage.Secret)
@@ -135,6 +140,7 @@ func UpdateCardReq(data storage.BankCardData) (bool, error) {
 	return true, nil
 }
 
+// DeleteCardReq - запрос на удаление банковской карты на сервере
 func DeleteCardReq(data storage.BankCardData) (bool, error) {
 	var b [16]byte
 	copy(b[:], storage.Secret)
@@ -198,6 +204,8 @@ func DeleteCardReq(data storage.BankCardData) (bool, error) {
 	return true, nil
 }
 
+// SyncCardReq - запрос на синхронизацию данных банковских карт, если хеши клиента и сервера
+// не различались, данные не трогаем
 func SyncCardReq() (bool, error) {
 	var err error
 	ctx := context.WithValue(context.Background(), storage.UserLoginCtxKey, storage.UserLoginPw.Login)

@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+// AddNewFile - ручка для добавления новых данных типа "файл"
 func AddNewFile(res http.ResponseWriter, req *http.Request) {
 	var userData storage.UserData
 	ctx := req.Context()
@@ -53,6 +54,7 @@ func AddNewFile(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusAccepted)
 }
 
+// GetFile - ручка для получения фаловых данных по id
 func GetFile(res http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	_, ok := req.Context().Value(storage.UserLoginCtxKey).(string)
@@ -99,6 +101,7 @@ func GetFile(res http.ResponseWriter, req *http.Request) {
 
 }
 
+// UpdateFile - ручка для обновления файловых данных по id
 func UpdateFile(res http.ResponseWriter, req *http.Request) {
 	var userData storage.UserData
 	ctx := req.Context()
@@ -158,6 +161,7 @@ func UpdateFile(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusAccepted)
 }
 
+// DeleteFile - ручека для удаления файла по id
 func DeleteFile(res http.ResponseWriter, req *http.Request) {
 	var userData storage.UserData
 	ctx := req.Context()
@@ -198,6 +202,7 @@ func DeleteFile(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusOK)
 }
 
+// SearchFile - ручка для поиска фйла по строке
 func SearchFile(res http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	_, ok := req.Context().Value(storage.UserLoginCtxKey).(string)
@@ -244,6 +249,7 @@ func SearchFile(res http.ResponseWriter, req *http.Request) {
 
 }
 
+// GetAllFiles - ручка для получения всех сохраненных файлов
 func GetAllFiles(res http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	_, ok := req.Context().Value(storage.UserLoginCtxKey).(string)

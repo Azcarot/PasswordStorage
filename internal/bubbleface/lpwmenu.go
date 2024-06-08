@@ -32,6 +32,8 @@ var lpwChoices = lpwCho{
 	Delete: "Delete login/password",
 }
 
+// LPWMenuModel - основная функция для построения и работы с
+// основным меню действий с данными типа логин/пароль
 func LPWMenuModel() lpwMenuModel {
 	return lpwMenuModel{
 

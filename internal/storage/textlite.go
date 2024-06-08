@@ -10,14 +10,17 @@ import (
 	"strings"
 )
 
+// TextLiteStorage - хранилище текстовых данных на клиенте
 type TextLiteStorage struct {
 	Storage PgxStorage
 	DB      *sql.DB
 	Data    TextData
 }
 
+// TLiteS - реализация хранилища текстовых данных на клиенте
 var TLiteS PgxStorage
 
+// CreateNewRecord - создание новой записи текстовых данных на клиенте
 func (store *TextLiteStorage) CreateNewRecord(ctx context.Context) error {
 	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
 	if !ok {
@@ -51,6 +54,7 @@ func (store *TextLiteStorage) CreateNewRecord(ctx context.Context) error {
 	return nil
 }
 
+// GetRecord - получение текстовых данных на клиенте по id
 func (store *TextLiteStorage) GetRecord(ctx context.Context) (any, error) {
 	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
 
@@ -85,6 +89,7 @@ func (store *TextLiteStorage) GetRecord(ctx context.Context) (any, error) {
 	}
 }
 
+// UpdateRecord - обновление текстовых данных на клиенте по id
 func (store *TextLiteStorage) UpdateRecord(ctx context.Context) error {
 	tx, err := store.DB.BeginTx(ctx, nil)
 	if err != nil {
@@ -111,6 +116,7 @@ func (store *TextLiteStorage) UpdateRecord(ctx context.Context) error {
 	return nil
 }
 
+// DeleteRecord - удаление текстовых данных с клиента по id
 func (store *TextLiteStorage) DeleteRecord(ctx context.Context) error {
 	tx, err := store.DB.BeginTx(ctx, nil)
 	if err != nil {
@@ -131,6 +137,7 @@ func (store *TextLiteStorage) DeleteRecord(ctx context.Context) error {
 	return nil
 }
 
+// SearchRecord - поиск текстовых данных на клиенте по строке
 func (store *TextLiteStorage) SearchRecord(ctx context.Context) (any, error) {
 	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
 
@@ -184,6 +191,7 @@ func (store *TextLiteStorage) SearchRecord(ctx context.Context) (any, error) {
 
 }
 
+// GetAllRecords - получение всех текстовых данных пользователя на клиенте
 func (store *TextLiteStorage) GetAllRecords(ctx context.Context) (any, error) {
 	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
 
@@ -226,6 +234,7 @@ func (store *TextLiteStorage) GetAllRecords(ctx context.Context) (any, error) {
 
 }
 
+// CypherTextData - шифрование текстовых данных пользователя на клиенте
 func (store *TextLiteStorage) CypherTextData(ctx context.Context) error {
 	var err error
 	store.Data.Text, err = CypherData(ctx, store.Data.Text)
@@ -244,6 +253,7 @@ func (store *TextLiteStorage) CypherTextData(ctx context.Context) error {
 	return err
 }
 
+// DeCypherTextData - дешифровка текстовых данных на клиенте
 func (store *TextLiteStorage) DeCypherTextData(ctx context.Context) error {
 	var err error
 	store.Data.Text, err = Dechypher(ctx, store.Data.Text)
@@ -258,6 +268,7 @@ func (store *TextLiteStorage) DeCypherTextData(ctx context.Context) error {
 	return err
 }
 
+// HashDatabaseData - получение хэша из всех текстовых данных пользователя на клиенте
 func (store *TextLiteStorage) HashDatabaseData(ctx context.Context) (string, error) {
 	textData, err := store.GetAllRecords(ctx)
 	if err != nil {
@@ -275,6 +286,7 @@ func (store *TextLiteStorage) HashDatabaseData(ctx context.Context) (string, err
 	return hashString, nil
 }
 
+// NewTLiteStorage - реализация нового хранилища текстовых данных на клиенте
 func NewTLiteStorage(storage PgxStorage, db *sql.DB) *TextLiteStorage {
 	return &TextLiteStorage{
 		Storage: storage,

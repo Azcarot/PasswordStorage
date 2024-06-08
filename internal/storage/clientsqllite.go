@@ -14,18 +14,21 @@ import (
 	_ "modernc.org/sqlite"
 )
 
+// LiteConn - интерфейсный тип для работы с пользователем на клиенте
 type LiteConn interface {
 	CreateTablesForGoKeeper()
 	CreateNewUser(ctx context.Context, data RegisterRequest) error
 	GetSecretKey(data string) error
 }
 
+// ClientUserStorage - тип для хранения пользовтеля на клиенте
 type ClientUserStorage struct {
 	Storage PgxStorage
 	DB      *sql.Conn
 	Data    any
 }
 
+// SQLLiteStore - тип для пользователького хранилища sqlite
 type SQLLiteStore struct {
 	DB *sql.DB
 }
@@ -35,6 +38,7 @@ type liteConnTime struct {
 	timeBeforeAttempt int
 }
 
+// SyncReq - тип для передачи хешей в запросах на синхронизацию со стороны клиента
 type SyncReq struct {
 	BankCard string `json:"bank"`
 	TextData string `json:"text"`
@@ -42,19 +46,32 @@ type SyncReq struct {
 	LoginPw  string `json:"lpw"`
 }
 
+// LiteDB - подключение к SQLite
 var LiteDB *sql.DB
+
+// LiteST - интерфейс для работы с пользователем на клиенте
 var LiteST LiteConn
+
+// ServURL - url сервера
 var ServURL string
+
+// AuthToken - токен авторизации
 var AuthToken string
+
+// Secret - секрет на клиенте
 var Secret string
+
+// SyncClientHashes - хэши данных пользователя для запросов на синхру с сервером
 var SyncClientHashes SyncReq
 
+// MakeLiteConn - реализация подключения к SQLlite
 func MakeLiteConn(db *sql.DB) LiteConn {
 	return &SQLLiteStore{
 		DB: db,
 	}
 }
 
+// NewLiteConn - подключение к SQLlite
 func NewLiteConn(f utils.Flags) error {
 	var err error
 	var attempts liteConnTime
@@ -89,6 +106,7 @@ func connectToLiteDB(f utils.Flags) error {
 	return err
 }
 
+// CreateTablesForGoKeeper - создание таблиц для всех типов данных пользователя на клиенте
 func (store SQLLiteStore) CreateTablesForGoKeeper() {
 	ctx := context.Background()
 
@@ -186,6 +204,7 @@ func (store SQLLiteStore) CreateTablesForGoKeeper() {
 
 }
 
+// GenerateSecretKey - генерация секретного ключа для пользователя
 func GenerateSecretKey(data RegisterRequest) string {
 	// Combine login and password
 	combined := data.Login + ":" + data.Password
@@ -203,6 +222,7 @@ func GenerateSecretKey(data RegisterRequest) string {
 	return secretKey
 }
 
+// GetSecretKey - получение секрета текущего пользователя
 func (store SQLLiteStore) GetSecretKey(login string) error {
 	query := `SELECT DISTINCT secret
 	FROM users
@@ -216,6 +236,7 @@ func (store SQLLiteStore) GetSecretKey(login string) error {
 	return nil
 }
 
+// CreateNewUser - создание нового пользователя на клиенте
 func (store SQLLiteStore) CreateNewUser(ctx context.Context, data RegisterRequest) error {
 	encodedPW := utils.ShaData(data.Password, SecretKey)
 	for {

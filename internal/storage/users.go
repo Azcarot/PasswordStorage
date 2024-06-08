@@ -11,11 +11,13 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+// RegisterRequest - тип для запросов на регистрацию пользователя
 type RegisterRequest struct {
 	Login    string `json:"login"`
 	Password string `json:"password"`
 }
 
+// CreateNewUser - создание нового пользователя на сервере
 func (store SQLStore) CreateNewUser(ctx context.Context, data UserData) error {
 	encodedPW := utils.ShaData(data.Password, SecretKey)
 	for {
@@ -49,6 +51,7 @@ func (store SQLStore) CreateNewUser(ctx context.Context, data UserData) error {
 
 }
 
+// CheckUserExists - проверка, зарегистрирован ли пользователь
 func (store SQLStore) CheckUserExists(data UserData) (bool, error) {
 	ctx := context.Background()
 	var login string
@@ -68,6 +71,7 @@ func (store SQLStore) CheckUserExists(data UserData) (bool, error) {
 
 }
 
+// CheckUserPassword - проверка пароля пользователя
 func (store SQLStore) CheckUserPassword(ctx context.Context, data UserData) (bool, error) {
 	encodedPw := utils.ShaData(data.Password, SecretKey)
 	sqlQuery := fmt.Sprintf(`SELECT login, password FROM users WHERE login = '%s'`, data.Login)
@@ -83,6 +87,7 @@ func (store SQLStore) CheckUserPassword(ctx context.Context, data UserData) (boo
 	return true, nil
 }
 
+// VerifyToken - проверка токена авторизации
 func VerifyToken(token string) (jwt.MapClaims, bool) {
 	hmacSecretString := SecretKey
 	hmacSecret := []byte(hmacSecretString)
@@ -97,8 +102,8 @@ func VerifyToken(token string) (jwt.MapClaims, bool) {
 	if claims, ok := gettoken.Claims.(jwt.MapClaims); ok && gettoken.Valid {
 		return claims, true
 
-	} else {
-		log.Printf("Invalid JWT Token")
-		return nil, false
 	}
+	log.Printf("Invalid JWT Token")
+	return nil, false
+
 }

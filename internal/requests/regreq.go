@@ -9,6 +9,7 @@ import (
 	"github.com/Azcarot/PasswordStorage/internal/storage"
 )
 
+// ReistrationReq - запрос на регистрацию пользователя
 func RegistrationReq(data storage.RegisterRequest) (bool, error) {
 	if len(data.Login) == 0 || len(data.Password) == 0 {
 		return false, fmt.Errorf("wrong login/password data")

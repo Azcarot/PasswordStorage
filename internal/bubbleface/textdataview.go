@@ -17,6 +17,8 @@ type textViewModel struct {
 
 var selectedText storage.TextResponse
 
+// TextViewModel - функция для построения и работы со
+// списком сохраненных текстовых данных
 func TextViewModel() textViewModel {
 	ctx := context.WithValue(context.Background(), storage.UserLoginCtxKey, storage.UserLoginPw.Login)
 	var choices []string

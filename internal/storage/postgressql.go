@@ -20,8 +20,10 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
+// SecretKey - ключ для шифрования пользователя
 const SecretKey string = "super-secret"
 
+// MyCustomClaims - тип для хранения токена авторизации
 type MyCustomClaims struct {
 	jwt.MapClaims
 }
@@ -30,16 +32,21 @@ type CtxKey string
 
 var mut sync.Mutex
 
+// UserLoginCtxKey - ключ для хранения логина в конткесте запросов
 const UserLoginCtxKey CtxKey = "userLogin"
-const DBCtxKey CtxKey = "dbConn"
+
+// EncryptionCtxKey - ключ для хранения уникального sercret пользователя в конткесте запросов
 const EncryptionCtxKey CtxKey = "secret"
 
+// UserData - тип для хранения пользовательских данных
+// для авторизации/регистрации
 type UserData struct {
 	Login    string
 	Password string
 	Date     string
 }
 
+// LoginData - тип данных пользователя формата логин/пароль
 type LoginData struct {
 	ID       int    `json:"id"`
 	Login    string `json:"login"`
@@ -50,6 +57,7 @@ type LoginData struct {
 	Str      string
 }
 
+// LoginResponse - формат ответа на запросы для данных типа логин/пароль
 type LoginResponse struct {
 	ID       int    `json:"id"`
 	Login    string `json:"login"`
@@ -57,6 +65,7 @@ type LoginResponse struct {
 	Comment  string `json:"comment"`
 }
 
+// TextData - тип данных пользователя формата текстовые данные
 type TextData struct {
 	ID      int    `json:"id"`
 	Text    string `json:"text"`
@@ -66,12 +75,14 @@ type TextData struct {
 	Str     string
 }
 
+// LoginResponse - формат ответа на запросы для данных типа логин/пароль
 type TextResponse struct {
 	ID      int    `json:"id"`
 	Text    string `json:"text"`
 	Comment string `json:"comment"`
 }
 
+// FileData - тип данных пользователя формата "файл"
 type FileData struct {
 	ID       int    `json:"id"`
 	FileName string `json:"name"`
@@ -83,6 +94,7 @@ type FileData struct {
 	Str      string
 }
 
+// FileResponse - формат ответа на запросы для данных типа file
 type FileResponse struct {
 	ID       int    `json:"id"`
 	FileName string `json:"name"`
@@ -91,6 +103,7 @@ type FileResponse struct {
 	Comment  string `json:"comment"`
 }
 
+// CardData - тип данных пользователя формата банковских карт
 type BankCardData struct {
 	ID         int    `json:"id"`
 	CardNumber string `json:"number"`
@@ -103,6 +116,7 @@ type BankCardData struct {
 	Str        string
 }
 
+// BankCardResponse - формат ответа на запросы для данных типа банковских карт
 type BankCardResponse struct {
 	ID         int    `json:"id"`
 	CardNumber string `json:"number"`
@@ -112,11 +126,13 @@ type BankCardResponse struct {
 	Comment    string `json:"comment"`
 }
 
+// GetReqData - формат данных для запросов Get и Search
 type GetReqData struct {
 	ID  string `json:"id"`
 	Str string `json:"str"`
 }
 
+// PgxConn интерфейс подключения/работы с пользователем в бд
 type PgxConn interface {
 	CreateTablesForGoKeeper()
 	CreateNewUser(ctx context.Context, data UserData) error
@@ -124,6 +140,7 @@ type PgxConn interface {
 	CheckUserPassword(ctx context.Context, data UserData) (bool, error)
 }
 
+// PgxStorage - интерфейс работы с хранилищами данных пользователя
 type PgxStorage interface {
 	CreateNewRecord(ctx context.Context) error
 	UpdateRecord(ctx context.Context) error
@@ -136,40 +153,47 @@ type PgxStorage interface {
 	GetData() any
 }
 
+// SQLStore - тип для подключения к постгресс
 type SQLStore struct {
 	DB *pgx.Conn
 }
 
+// Storage - тип для работы с пользователем в БД
 type Storage struct {
 	Storage PgxStorage
 	DB      *pgx.Conn
 	Data    any
 }
 
+// BankCardStorage - тип для работы с банковскими картами в postgress
 type BankCardStorage struct {
 	Storage PgxStorage
 	DB      *pgx.Conn
 	Data    BankCardData
 }
 
+// LoginPWStorage - тип для работы с логин/пароль в postgress
 type LoginPwStorage struct {
 	Storage PgxStorage
 	DB      *pgx.Conn
 	Data    LoginData
 }
 
+// TextStorage - тип для работы с текстовыми данными в postgress
 type TextStorage struct {
 	Storage PgxStorage
 	DB      *pgx.Conn
 	Data    TextData
 }
 
+// FileStorage - тип для работы с файлами в postgress
 type FileStorage struct {
 	Storage PgxStorage
 	DB      *pgx.Conn
 	Data    FileData
 }
 
+// SyncData - тип для хранения хешей данных, для запросов синхронизации
 type SyncData struct {
 	BankCardHash string
 	TextDataHash string
@@ -177,17 +201,36 @@ type SyncData struct {
 	LoginData    string
 }
 
+// SyncServerHashes - хэши данных пользователя с сервера
 var SyncServerHashes SyncData
+
+// UserLoginPw - данные пользователя (логин/пароль)
 var UserLoginPw UserData
+
+// DB подключение к бд для работы с пользователем
 var DB *pgx.Conn
+
+// ST - интерфейс работы с пользователем
 var ST PgxConn
-var PST PgxStorage
+
+// BCST - интерфейс работы с банковскими картами в pgx
 var BCST PgxStorage
+
+// LPST - интерфейс работы с данными типа логин/пароль в pgx
 var LPST PgxStorage
+
+// TST - интерфейс работы с текстовыми данными в pgx
 var TST PgxStorage
+
+// FST - интерфейс работы с файловыми данными в pgx
 var FST PgxStorage
+
 var errTimeout = fmt.Errorf("timeout exceeded")
+
+// ErrNoLogin - ошибка при отсутствии логина пользователя в контексте
 var ErrNoLogin = fmt.Errorf("no login in context")
+
+// ErrNoKey - ошибка при отсутсвии секрета в контексте
 var ErrNoKey = fmt.Errorf("no key in context")
 
 type pgxConnTime struct {
@@ -195,6 +238,7 @@ type pgxConnTime struct {
 	timeBeforeAttempt int
 }
 
+// NewPwStorage - реализация хранилища для пользователя
 func NewPwStorage(storage PgxStorage, db *pgx.Conn) *Storage {
 	return &Storage{
 		Storage: storage,
@@ -202,6 +246,7 @@ func NewPwStorage(storage PgxStorage, db *pgx.Conn) *Storage {
 	}
 }
 
+// NewBCStorage - реализация хранилища банковских карт
 func NewBCStorage(storage PgxStorage, db *pgx.Conn) *BankCardStorage {
 	return &BankCardStorage{
 		Storage: storage,
@@ -209,6 +254,7 @@ func NewBCStorage(storage PgxStorage, db *pgx.Conn) *BankCardStorage {
 	}
 }
 
+// NewLPSTtorage - реализация хранилища логина/пароля
 func NewLPSTtorage(storage PgxStorage, db *pgx.Conn) *LoginPwStorage {
 	return &LoginPwStorage{
 		Storage: storage,
@@ -216,6 +262,7 @@ func NewLPSTtorage(storage PgxStorage, db *pgx.Conn) *LoginPwStorage {
 	}
 }
 
+// NewTSTtorage - реализация хранилища текстовых данных
 func NewTSTtorage(storage PgxStorage, db *pgx.Conn) *TextStorage {
 	return &TextStorage{
 		Storage: storage,
@@ -223,6 +270,7 @@ func NewTSTtorage(storage PgxStorage, db *pgx.Conn) *TextStorage {
 	}
 }
 
+// NewFSTtorage - реализация хранилища файлов
 func NewFSTtorage(storage PgxStorage, db *pgx.Conn) *FileStorage {
 	return &FileStorage{
 		Storage: storage,
@@ -230,12 +278,14 @@ func NewFSTtorage(storage PgxStorage, db *pgx.Conn) *FileStorage {
 	}
 }
 
+// MakeConn - реализация хранилища пользователей
 func MakeConn(db *pgx.Conn) PgxConn {
 	return &SQLStore{
 		DB: db,
 	}
 }
 
+// NewConn - подключение к БД, с последющим созданием и реализацией всех хранилищ для сервера
 func NewConn(f utils.Flags) error {
 	var err error
 	var attempts pgxConnTime
@@ -254,7 +304,7 @@ func NewConn(f utils.Flags) error {
 		}
 		times := time.Duration(attempts.timeBeforeAttempt)
 		time.Sleep(times * time.Second)
-		attempts.attempts -= 1
+		attempts.attempts--
 		attempts.timeBeforeAttempt += 2
 		err = connectToDB(f)
 
@@ -274,6 +324,7 @@ func connectToDB(f utils.Flags) error {
 	return err
 }
 
+// AddData - добавление данных в хранилище
 func (store *BankCardStorage) AddData(data any) error {
 	newdata, ok := data.(BankCardData)
 	if !ok {
@@ -283,6 +334,7 @@ func (store *BankCardStorage) AddData(data any) error {
 	return nil
 }
 
+// GetData - получение данных из хранилища
 func (store *BankCardStorage) GetData() any {
 
 	newdata := store.Data
@@ -409,6 +461,7 @@ func (store *FileStorage) GetData() any {
 	return newdata
 }
 
+// CheckDBConnection - проверка соединения с БД
 func CheckDBConnection() http.Handler {
 	checkConnection := func(res http.ResponseWriter, req *http.Request) {
 
@@ -424,6 +477,7 @@ func CheckDBConnection() http.Handler {
 	return http.HandlerFunc(checkConnection)
 }
 
+// CreateTablesForGoKeeper - создание таблиц для всех типов данных в бд сервера
 func (store SQLStore) CreateTablesForGoKeeper() {
 	ctx := context.Background()
 	mut.Lock()
@@ -519,6 +573,7 @@ func (store SQLStore) CreateTablesForGoKeeper() {
 
 }
 
+// CypherData - шифрование данных секретом из контекста
 func CypherData(ctx context.Context, data string) (string, error) {
 	keyData, ok := ctx.Value(EncryptionCtxKey).([16]byte)
 	if !ok {
@@ -543,7 +598,7 @@ func CypherData(ctx context.Context, data string) (string, error) {
 	return base64.URLEncoding.EncodeToString(ciphertext), nil
 }
 
-// decrypt decrypts ciphertext using the given key and returns the plaintext
+// Dechyper - дешифровка данных секретом из контекста
 func Dechypher(ctx context.Context, data string) (string, error) {
 	keyData, ok := ctx.Value(EncryptionCtxKey).([16]byte)
 	if !ok {

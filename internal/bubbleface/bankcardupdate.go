@@ -15,6 +15,8 @@ type cardUpdateModel struct {
 	err     error
 }
 
+// UpdateCardModel - основная функция для построения и работы с
+// меню просмотра/обновления карты
 func UpdateCardModel() cardUpdateModel {
 	var inputs []textinput.Model = make([]textinput.Model, 5)
 	newheader = "Please insert card data:"

@@ -8,6 +8,7 @@ import (
 	"github.com/Azcarot/PasswordStorage/internal/storage"
 )
 
+// GeckAuthorization - проверка/авторизация пользователя
 func CheckAuthorization(h http.Handler) http.Handler {
 	login := func(res http.ResponseWriter, req *http.Request) {
 		token := req.Header.Get("Authorization")

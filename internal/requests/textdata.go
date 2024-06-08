@@ -11,6 +11,7 @@ import (
 	"github.com/Azcarot/PasswordStorage/internal/storage"
 )
 
+// AddTextReq - запрос на создание новой текстовой записи на сервере
 func AddTextReq(data storage.TextData) (bool, error) {
 	var b [16]byte
 	copy(b[:], storage.Secret)
@@ -57,6 +58,7 @@ func AddTextReq(data storage.TextData) (bool, error) {
 	return true, nil
 }
 
+// DeleteTextReq - запрос на удаление записи на сервере
 func DeleteTextReq(data storage.TextData) (bool, error) {
 	var b [16]byte
 	copy(b[:], storage.Secret)
@@ -107,6 +109,7 @@ func DeleteTextReq(data storage.TextData) (bool, error) {
 	return true, nil
 }
 
+// UpdateTextReq - запрос на обновление текстовой записи на сервере
 func UpdateTextReq(data storage.TextData) (bool, error) {
 	var b [16]byte
 	copy(b[:], storage.Secret)
@@ -157,6 +160,8 @@ func UpdateTextReq(data storage.TextData) (bool, error) {
 	return true, nil
 }
 
+// SyncTextReq - запрос на синхронизацию данных текстового типа, если хеши клиента и сервера
+// не различались, данные не трогаем
 func SyncTextReq() (bool, error) {
 	var err error
 	ctx := context.WithValue(context.Background(), storage.UserLoginCtxKey, storage.UserLoginPw.Login)

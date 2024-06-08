@@ -17,6 +17,8 @@ type lpwViewModel struct {
 
 var selectedLPW storage.LoginResponse
 
+// LPWViewModel - основная функция для построения и просмотра списка
+// сохраненных данных типа логин/пароль
 func LPWViewModel() lpwViewModel {
 	ctx := context.WithValue(context.Background(), storage.UserLoginCtxKey, storage.UserLoginPw.Login)
 	var choices []string

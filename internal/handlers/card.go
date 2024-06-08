@@ -1,3 +1,4 @@
+// Package handlers - все обработчики запросов на сервере
 package handlers
 
 import (
@@ -12,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+// AddNewCard - ручка для добавления новых данных типа банковских карт
 func AddNewCard(res http.ResponseWriter, req *http.Request) {
 	var userData storage.UserData
 	ctx := req.Context()
@@ -53,6 +55,7 @@ func AddNewCard(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusAccepted)
 }
 
+// GetBankCard - ручка для получения конкретной банковской карты по id
 func GetBankCard(res http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	_, ok := req.Context().Value(storage.UserLoginCtxKey).(string)
@@ -100,6 +103,7 @@ func GetBankCard(res http.ResponseWriter, req *http.Request) {
 
 }
 
+// UpdateCard - ручка для обновления записи банковской карты по id
 func UpdateCard(res http.ResponseWriter, req *http.Request) {
 	var userData storage.UserData
 	ctx := req.Context()
@@ -163,6 +167,7 @@ func UpdateCard(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusAccepted)
 }
 
+// DeleteCard - ручка для удаления банковской карты по id
 func DeleteCard(res http.ResponseWriter, req *http.Request) {
 	var userData storage.UserData
 	ctx := req.Context()
@@ -203,6 +208,7 @@ func DeleteCard(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusOK)
 }
 
+// SearchBankCard - ручка для поиска банковской карты по str
 func SearchBankCard(res http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	_, ok := req.Context().Value(storage.UserLoginCtxKey).(string)
@@ -249,6 +255,7 @@ func SearchBankCard(res http.ResponseWriter, req *http.Request) {
 
 }
 
+// GetAllBankCards - ручка для получения полного списка сохраненных карт
 func GetAllBankCards(res http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	_, ok := req.Context().Value(storage.UserLoginCtxKey).(string)

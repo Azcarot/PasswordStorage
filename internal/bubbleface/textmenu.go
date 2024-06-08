@@ -31,6 +31,7 @@ var textChoices = textCho{
 	Delete: "Delete text",
 }
 
+// TextMenuModel - основное меню работы с текстовыми данными
 func TextMenuModel() textMenuModel {
 	return textMenuModel{
 
@@ -120,6 +121,7 @@ type textModel struct {
 	err     error
 }
 
+// AddTextModel - меню для добавления новых текстовых данных
 func AddTextModel() textModel {
 	var inputs []textinput.Model = make([]textinput.Model, 2)
 	newheader = "Please insert text data:"

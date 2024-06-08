@@ -15,6 +15,8 @@ type lpwUpdateModel struct {
 	err     error
 }
 
+// UpdateLPWModel - основная функция для построения и работы с
+// основным меню просмотра/обновления данных типа логин/пароль
 func UpdateLPWModel() lpwUpdateModel {
 	var inputs []textinput.Model = make([]textinput.Model, 3)
 	newheader = "Please check login/password data:"

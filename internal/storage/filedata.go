@@ -9,6 +9,7 @@ import (
 	"strings"
 )
 
+// CreateNewRecord - создание новой записи с файловыми данными на сервере
 func (store *FileStorage) CreateNewRecord(ctx context.Context) error {
 	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
 	if !ok {
@@ -40,6 +41,7 @@ func (store *FileStorage) CreateNewRecord(ctx context.Context) error {
 	return nil
 }
 
+// GetRecord - получение файловых данных на сервере по id
 func (store *FileStorage) GetRecord(ctx context.Context) (any, error) {
 	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
 
@@ -76,6 +78,7 @@ func (store *FileStorage) GetRecord(ctx context.Context) (any, error) {
 	}
 }
 
+// UpdateRecord - обновление файловых данных на сервере по id
 func (store *FileStorage) UpdateRecord(ctx context.Context) error {
 	tx, err := store.DB.Begin(ctx)
 	if err != nil {
@@ -103,6 +106,7 @@ func (store *FileStorage) UpdateRecord(ctx context.Context) error {
 	return nil
 }
 
+// DeleteRecord - удаление фаловых данных с сервера по id
 func (store *FileStorage) DeleteRecord(ctx context.Context) error {
 	tx, err := store.DB.Begin(ctx)
 	if err != nil {
@@ -124,6 +128,7 @@ func (store *FileStorage) DeleteRecord(ctx context.Context) error {
 	return nil
 }
 
+// SearchRecord - поиск файловых данных на сервере по строке
 func (store *FileStorage) SearchRecord(ctx context.Context) (any, error) {
 	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
 
@@ -182,6 +187,7 @@ func (store *FileStorage) SearchRecord(ctx context.Context) (any, error) {
 
 }
 
+// GetAllRecords - получение всех файловых данных пользователя на сервере
 func (store *FileStorage) GetAllRecords(ctx context.Context) (any, error) {
 	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
 
@@ -230,6 +236,7 @@ func (store *FileStorage) GetAllRecords(ctx context.Context) (any, error) {
 
 }
 
+// CypherFileData - шифрование файловых данных пользователя на сервере
 func (store *FileStorage) CypherFileData(ctx context.Context) error {
 	var err error
 	store.Data.FileName, err = CypherData(ctx, store.Data.FileName)
@@ -256,6 +263,7 @@ func (store *FileStorage) CypherFileData(ctx context.Context) error {
 	return err
 }
 
+// DeCypherFileData - дешифровка файловых данных на сервере
 func (store *FileStorage) DeCypherFileData(ctx context.Context) error {
 	var err error
 
@@ -281,6 +289,7 @@ func (store *FileStorage) DeCypherFileData(ctx context.Context) error {
 	return err
 }
 
+// HashDatabaseData - получение хэша из всех файловых данных пользователя на сервере
 func (store FileStorage) HashDatabaseData(ctx context.Context) (string, error) {
 	fileData, err := store.GetAllRecords(ctx)
 	if err != nil {

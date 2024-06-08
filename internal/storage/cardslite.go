@@ -10,14 +10,17 @@ import (
 	"strings"
 )
 
+// BankCardLiteStorage - тип хранилиае банковских кард на клиенте
 type BankCardLiteStorage struct {
 	Storage PgxStorage
 	DB      *sql.DB
 	Data    BankCardData
 }
 
+// BCLiteS - реализация хранилища банковских карт на клиенте
 var BCLiteS PgxStorage
 
+// CreateNewRecord - создание новой записи для банковских карт в бд клиента
 func (store *BankCardLiteStorage) CreateNewRecord(ctx context.Context) error {
 	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
 	if !ok {
@@ -54,6 +57,7 @@ func (store *BankCardLiteStorage) CreateNewRecord(ctx context.Context) error {
 	return nil
 }
 
+// GetRecord - получение банковской карты по id из бд клиента
 func (store *BankCardLiteStorage) GetRecord(ctx context.Context) (any, error) {
 	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
 
@@ -92,6 +96,7 @@ func (store *BankCardLiteStorage) GetRecord(ctx context.Context) (any, error) {
 	}
 }
 
+// UpdateRecord - обновление банковской карты в бд клиента по id
 func (store *BankCardLiteStorage) UpdateRecord(ctx context.Context) error {
 	tx, err := store.DB.BeginTx(ctx, nil)
 	if err != nil {
@@ -119,6 +124,7 @@ func (store *BankCardLiteStorage) UpdateRecord(ctx context.Context) error {
 	return nil
 }
 
+// DeleteRecord - удаление банковской карты из бд клиента по id
 func (store *BankCardLiteStorage) DeleteRecord(ctx context.Context) error {
 	tx, err := store.DB.BeginTx(ctx, nil)
 	if err != nil {
@@ -139,6 +145,7 @@ func (store *BankCardLiteStorage) DeleteRecord(ctx context.Context) error {
 	return nil
 }
 
+// SearchRecord - поиск банковской карты в бд клиента  по строке
 func (store *BankCardLiteStorage) SearchRecord(ctx context.Context) (any, error) {
 	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
 
@@ -199,6 +206,7 @@ func (store *BankCardLiteStorage) SearchRecord(ctx context.Context) (any, error)
 
 }
 
+// GetAllRecords - получение всех данных банковских карт пользователя на клиенте
 func (store *BankCardLiteStorage) GetAllRecords(ctx context.Context) (any, error) {
 	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
 
@@ -245,6 +253,7 @@ func (store *BankCardLiteStorage) GetAllRecords(ctx context.Context) (any, error
 
 }
 
+// CypherBankData - шифрование банковских карт на клиенте
 func (store *BankCardLiteStorage) CypherBankData(ctx context.Context) error {
 	var err error
 	store.Data.CardNumber, err = CypherData(ctx, store.Data.CardNumber)
@@ -274,6 +283,7 @@ func (store *BankCardLiteStorage) CypherBankData(ctx context.Context) error {
 	return err
 }
 
+// DeCypherBankData дешифровка данных банковских карт на клиенте
 func (store *BankCardLiteStorage) DeCypherBankData(ctx context.Context) error {
 	var err error
 	store.Data.CardNumber, err = Dechypher(ctx, store.Data.CardNumber)
@@ -299,6 +309,7 @@ func (store *BankCardLiteStorage) DeCypherBankData(ctx context.Context) error {
 	return err
 }
 
+// HashDatabaseData получение хеша из банковских карт пользователя на клиенте
 func (store BankCardLiteStorage) HashDatabaseData(ctx context.Context) (string, error) {
 	bankData, err := store.GetAllRecords(ctx)
 	if err != nil {
@@ -316,6 +327,7 @@ func (store BankCardLiteStorage) HashDatabaseData(ctx context.Context) (string, 
 	return hashString, nil
 }
 
+// NewBCLiteStorage - создание хранилища банковских карт на клиенте
 func NewBCLiteStorage(storage PgxStorage, db *sql.DB) *BankCardLiteStorage {
 	return &BankCardLiteStorage{
 		Storage: storage,

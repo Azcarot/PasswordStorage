@@ -9,6 +9,7 @@ import (
 	"strings"
 )
 
+// CreateNewRecord - создание новой записи с данными типа логин/пароль на сервере
 func (store *LoginPwStorage) CreateNewRecord(ctx context.Context) error {
 	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
 	if !ok {
@@ -38,6 +39,7 @@ func (store *LoginPwStorage) CreateNewRecord(ctx context.Context) error {
 	return nil
 }
 
+// GetRecord - получение файловых данных типа логин/пароль на сервере по id
 func (store *LoginPwStorage) GetRecord(ctx context.Context) (any, error) {
 	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
 
@@ -73,6 +75,7 @@ func (store *LoginPwStorage) GetRecord(ctx context.Context) (any, error) {
 	}
 }
 
+// UpdateRecord - обновление данных типа логин/пароль на сервере по id
 func (store *LoginPwStorage) UpdateRecord(ctx context.Context) error {
 	tx, err := store.DB.Begin(ctx)
 	if err != nil {
@@ -99,6 +102,7 @@ func (store *LoginPwStorage) UpdateRecord(ctx context.Context) error {
 	return nil
 }
 
+// DeleteRecord - удаление данных типа логин/пароль с сервера по id
 func (store *LoginPwStorage) DeleteRecord(ctx context.Context) error {
 	tx, err := store.DB.Begin(ctx)
 	if err != nil {
@@ -119,6 +123,7 @@ func (store *LoginPwStorage) DeleteRecord(ctx context.Context) error {
 	return nil
 }
 
+// SearchRecord - поиск данных типа логин/пароль на сервере по строке
 func (store *LoginPwStorage) SearchRecord(ctx context.Context) (any, error) {
 	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
 
@@ -175,6 +180,7 @@ func (store *LoginPwStorage) SearchRecord(ctx context.Context) (any, error) {
 
 }
 
+// GetAllRecords - получение всех данных типа логин/пароль пользователя на сервере
 func (store *LoginPwStorage) GetAllRecords(ctx context.Context) (any, error) {
 	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
 
@@ -222,6 +228,7 @@ func (store *LoginPwStorage) GetAllRecords(ctx context.Context) (any, error) {
 
 }
 
+// CypherFileData - шифрование данных типа логин/пароль пользователя на сервере
 func (store *LoginPwStorage) CypherLPWData(ctx context.Context) error {
 	var err error
 	store.Data.Login, err = CypherData(ctx, store.Data.Login)
@@ -244,6 +251,7 @@ func (store *LoginPwStorage) CypherLPWData(ctx context.Context) error {
 	return err
 }
 
+// DeCypherFileData - дешифровка данных типа логин/пароль на сервере
 func (store *LoginPwStorage) DeCypherLPWData(ctx context.Context) error {
 	var err error
 	store.Data.Login, err = Dechypher(ctx, store.Data.Login)
@@ -262,6 +270,7 @@ func (store *LoginPwStorage) DeCypherLPWData(ctx context.Context) error {
 	return err
 }
 
+// HashDatabaseData - получение хэша из всех данных типа логин/пароль пользователя на сервере
 func (store LoginPwStorage) HashDatabaseData(ctx context.Context) (string, error) {
 	lpwData, err := store.GetAllRecords(ctx)
 	if err != nil {

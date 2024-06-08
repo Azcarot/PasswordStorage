@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+// AddNewText - ручка добавления новой текстовой записи пользователя
 func AddNewText(res http.ResponseWriter, req *http.Request) {
 	var userData storage.UserData
 	ctx := req.Context()
@@ -53,6 +54,7 @@ func AddNewText(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusAccepted)
 }
 
+// GetText - ручка получения текстовой записи пользователя по id
 func GetText(res http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	_, ok := req.Context().Value(storage.UserLoginCtxKey).(string)
@@ -99,6 +101,7 @@ func GetText(res http.ResponseWriter, req *http.Request) {
 
 }
 
+// UpdateText - ручка для обновления тектовых данных пользователя по id
 func UpdateText(res http.ResponseWriter, req *http.Request) {
 	var userData storage.UserData
 	ctx := req.Context()
@@ -156,6 +159,7 @@ func UpdateText(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusAccepted)
 }
 
+// DeleteText - ручка для удаления текстовых данных пользователя по id
 func DeleteText(res http.ResponseWriter, req *http.Request) {
 	var userData storage.UserData
 	ctx := req.Context()
@@ -196,6 +200,7 @@ func DeleteText(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusOK)
 }
 
+// SearchText - ручка для поиска текстовой записи пользователя по строке
 func SearchText(res http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	_, ok := req.Context().Value(storage.UserLoginCtxKey).(string)
@@ -242,6 +247,7 @@ func SearchText(res http.ResponseWriter, req *http.Request) {
 
 }
 
+// GetAllTexts - ручка для получения всех текстовых записей пользователя
 func GetAllTexts(res http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	_, ok := req.Context().Value(storage.UserLoginCtxKey).(string)

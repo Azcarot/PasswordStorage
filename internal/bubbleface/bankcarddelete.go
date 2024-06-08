@@ -1,3 +1,4 @@
+// Package face - модуль взаимодействия с клиентом посредством bubbletea
 package face
 
 import (
@@ -16,6 +17,8 @@ type cardDeleteModel struct {
 	selected map[int]struct{}
 }
 
+// CardDeleteModel - основная функция для построения и работы с
+// моделью просмотра списка/удаления конкретной карты
 func CardDeleteModel() cardDeleteModel {
 	ctx := context.WithValue(context.Background(), storage.UserLoginCtxKey, storage.UserLoginPw.Login)
 	var choices []string
@@ -29,6 +32,7 @@ func CardDeleteModel() cardDeleteModel {
 			selected: make(map[int]struct{}),
 		}
 	}
+
 	var b [16]byte
 	copy(b[:], storage.Secret)
 	ctx = context.WithValue(context.Background(), storage.EncryptionCtxKey, b)
@@ -42,10 +46,12 @@ func CardDeleteModel() cardDeleteModel {
 	}
 }
 
+// Init - инициализация модели для просмотра списка/удаления конкретной карты
 func (m cardDeleteModel) Init() tea.Cmd {
 	return nil
 }
 
+// View - настройка структуры отображения списка/удаления конкретной карты
 func (m cardDeleteModel) View() string {
 	newheader = "Please select card to delete"
 	s := newheader + "\n\n"
@@ -70,6 +76,7 @@ func (m cardDeleteModel) View() string {
 	return s
 }
 
+// Update - функция c описанием реакций на разные события (нажатие клавиш, сообщения)
 func (m cardDeleteModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 

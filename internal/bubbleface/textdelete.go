@@ -16,6 +16,8 @@ type textDeleteModel struct {
 	selected map[int]struct{}
 }
 
+// TextDeleteModel - функция для построения и работы с
+// списком сохраненных текстовых данных и их удалением
 func TextDeleteModel() textDeleteModel {
 	ctx := context.WithValue(context.Background(), storage.UserLoginCtxKey, storage.UserLoginPw.Login)
 	var choices []string

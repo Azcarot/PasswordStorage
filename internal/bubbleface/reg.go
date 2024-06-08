@@ -42,6 +42,7 @@ type regmodel struct {
 var pauseTicker chan bool
 var resumeTicker chan bool
 
+// AuthRegModel - главное меню регистрации с последующей авторизацией
 func AuthRegModel() regmodel {
 	var inputs []textinput.Model = make([]textinput.Model, 2)
 	inputs[login] = textinput.New()

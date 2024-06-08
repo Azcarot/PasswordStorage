@@ -16,6 +16,8 @@ type lpwDeleteModel struct {
 	selected map[int]struct{}
 }
 
+// LPWDeleteModel - основная функция для построения и работы с
+// меню удаления пары логин/пароль
 func LPWDeleteModel() lpwDeleteModel {
 	ctx := context.WithValue(context.Background(), storage.UserLoginCtxKey, storage.UserLoginPw.Login)
 	var choices []string

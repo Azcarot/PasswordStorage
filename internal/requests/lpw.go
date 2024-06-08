@@ -11,6 +11,7 @@ import (
 	"github.com/Azcarot/PasswordStorage/internal/storage"
 )
 
+// AddLPWReq - запрос на добавление записи типа логин/пароль на сервере
 func AddLPWReq(data storage.LoginData) (bool, error) {
 	var b [16]byte
 	copy(b[:], storage.Secret)
@@ -64,6 +65,7 @@ func AddLPWReq(data storage.LoginData) (bool, error) {
 	return true, nil
 }
 
+// UpdateLPWReq - запрос на обновление данных типа логин/пароль на сервере
 func UpdateLPWReq(data storage.LoginData) (bool, error) {
 	var b [16]byte
 	copy(b[:], storage.Secret)
@@ -119,6 +121,7 @@ func UpdateLPWReq(data storage.LoginData) (bool, error) {
 	return true, nil
 }
 
+// DeleteLPWReq - запрос на удаление данных типа логин/пароль на сервере
 func DeleteLPWReq(data storage.LoginData) (bool, error) {
 	var b [16]byte
 	copy(b[:], storage.Secret)
@@ -175,6 +178,8 @@ func DeleteLPWReq(data storage.LoginData) (bool, error) {
 	return true, nil
 }
 
+// SyncLPWReq - запрос на синхронизацию данных типа логин/пароль, если хеши клиента и сервера
+// не различались, данные не трогаем
 func SyncLPWReq() (bool, error) {
 	var err error
 	ctx := context.WithValue(context.Background(), storage.UserLoginCtxKey, storage.UserLoginPw.Login)

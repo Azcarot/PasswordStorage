@@ -19,6 +19,7 @@ type loginmodel struct {
 	err     error
 }
 
+// AuthModel - основная функция для работы с меню авторизации
 func AuthModel() loginmodel {
 	var inputs []textinput.Model = make([]textinput.Model, 2)
 	inputs[login] = textinput.New()

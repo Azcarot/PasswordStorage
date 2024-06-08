@@ -9,6 +9,7 @@ import (
 	"strings"
 )
 
+// CreateNewRecord - создание новой записи с данными типа логин/пароль на сервере
 func (store *TextStorage) CreateNewRecord(ctx context.Context) error {
 	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
 	if !ok {
@@ -39,6 +40,7 @@ func (store *TextStorage) CreateNewRecord(ctx context.Context) error {
 	return nil
 }
 
+// GetRecord - получение файловых текстовых данных на сервере по id
 func (store *TextStorage) GetRecord(ctx context.Context) (any, error) {
 	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
 
@@ -73,6 +75,7 @@ func (store *TextStorage) GetRecord(ctx context.Context) (any, error) {
 	}
 }
 
+// UpdateRecord - обновление текстовых данных на сервере по id
 func (store *TextStorage) UpdateRecord(ctx context.Context) error {
 	tx, err := store.DB.Begin(ctx)
 	if err != nil {
@@ -99,6 +102,7 @@ func (store *TextStorage) UpdateRecord(ctx context.Context) error {
 	return nil
 }
 
+// DeleteRecord - удаление текстовых данных с сервера по id
 func (store *TextStorage) DeleteRecord(ctx context.Context) error {
 	tx, err := store.DB.Begin(ctx)
 	if err != nil {
@@ -119,6 +123,7 @@ func (store *TextStorage) DeleteRecord(ctx context.Context) error {
 	return nil
 }
 
+// SearchRecord - поиск текстовых данных на сервере по строке
 func (store *TextStorage) SearchRecord(ctx context.Context) (any, error) {
 	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
 
@@ -172,6 +177,7 @@ func (store *TextStorage) SearchRecord(ctx context.Context) (any, error) {
 
 }
 
+// GetAllRecords - получение всех текстовых данных пользователя на сервере
 func (store *TextStorage) GetAllRecords(ctx context.Context) (any, error) {
 	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
 
@@ -218,6 +224,7 @@ func (store *TextStorage) GetAllRecords(ctx context.Context) (any, error) {
 
 }
 
+// CypherTextData - шифрование текстовых данных пользователя на сервере
 func (store *TextStorage) CypherTextData(ctx context.Context) error {
 	var err error
 	store.Data.Text, err = CypherData(ctx, store.Data.Text)
@@ -236,6 +243,7 @@ func (store *TextStorage) CypherTextData(ctx context.Context) error {
 	return err
 }
 
+// DeCypherTextData - дешифровка текстовых данных на сервере
 func (store *TextStorage) DeCypherTextData(ctx context.Context) error {
 	var err error
 	store.Data.Text, err = Dechypher(ctx, store.Data.Text)
@@ -250,6 +258,7 @@ func (store *TextStorage) DeCypherTextData(ctx context.Context) error {
 	return err
 }
 
+// HashDatabaseData - получение хэша из всех текстовых данных пользователя на сервере
 func (store *TextStorage) HashDatabaseData(ctx context.Context) (string, error) {
 	textData, err := store.GetAllRecords(ctx)
 	if err != nil {

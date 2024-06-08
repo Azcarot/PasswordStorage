@@ -10,8 +10,10 @@ import (
 	"go.uber.org/zap"
 )
 
+// Flag - полученные флаги
 var Flag utils.Flags
 
+// MakeRouter - создание chi роутера со всеми ручками и миддварями
 func MakeRouter(flag utils.Flags) *chi.Mux {
 
 	logger, err := zap.NewDevelopment()

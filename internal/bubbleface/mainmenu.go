@@ -50,6 +50,7 @@ func (m MainModel) View() string {
 	return m.currentModel.View()
 }
 
+// InitialModel - головное меню регистраци/авторизации
 func InitialModel() MainModel {
 	return MainModel{
 		// Список меню авторизации
@@ -57,11 +58,13 @@ func InitialModel() MainModel {
 	}
 }
 
+// MakeTeaProg - создание инстанса баблти
 func MakeTeaProg() *tea.Program {
 	p := tea.NewProgram(InitialModel())
 	return p
 }
 
+// MainMenuModel - пострение главного меню для работы со всеми типами данных
 func MainMenuModel() mainMenuModel {
 	return mainMenuModel{
 		// Список основного меню

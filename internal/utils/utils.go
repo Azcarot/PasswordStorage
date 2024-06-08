@@ -1,3 +1,4 @@
+// Package utils - обработка флагов и шифрование данных пользователя
 package utils
 
 import (
@@ -10,6 +11,7 @@ import (
 	"github.com/caarlos0/env"
 )
 
+// Flags - тип для хранения флагов/переменных окружения
 type Flags struct {
 	FlagAddr      string
 	FlagDBAddr    string
@@ -17,12 +19,14 @@ type Flags struct {
 	SecretKey     [16]byte
 }
 
+// ServerENV -тип переменных окружения
 type ServerENV struct {
 	Address   string `env:"RUN_ADDRESS"`
 	DBAddress string `env:"DATABASE_URI"`
 	SecretKey string `env:"SECRET_KEY"`
 }
 
+// ShaData - хеширование данных пользователя
 func ShaData(result string, key string) string {
 	b := []byte(result)
 	shakey := []byte(key)
@@ -36,6 +40,7 @@ func ShaData(result string, key string) string {
 	return string(sha)
 }
 
+// ParseFlagsAndENV - получение значений флагов и переменных окружения
 func ParseFlagsAndENV() Flags {
 	var Flag Flags
 	flag.StringVar(&Flag.FlagAddr, "a", "localhost:8080", "address and port to run server")
@@ -74,26 +79,4 @@ func ParseFlagsAndENV() Flags {
 	Flag.SecretKey = byteArray
 
 	return Flag
-}
-
-func IsCardNumberValid(number uint64) bool {
-	return (number%10+cardChecksum(number/10))%10 == 0
-}
-
-func cardChecksum(number uint64) uint64 {
-	var luhn uint64
-	for i := 0; number > 0; i++ {
-		cur := number % 10
-
-		if i%2 == 0 { // even
-			cur = cur * 2
-			if cur > 9 {
-				cur = cur%10 + cur/10
-			}
-		}
-
-		luhn += cur
-		number = number / 10
-	}
-	return luhn % 10
 }

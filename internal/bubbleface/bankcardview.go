@@ -21,6 +21,8 @@ type MsgSendData struct {
 
 var selectedCard storage.BankCardResponse
 
+// CardViewModel - основная функция для построения и отбражения
+// списка карт для их просмотра/обновления
 func CardViewModel() cardViewModel {
 	ctx := context.WithValue(context.Background(), storage.UserLoginCtxKey, storage.UserLoginPw.Login)
 	var choices []string

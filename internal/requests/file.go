@@ -11,6 +11,7 @@ import (
 	"github.com/Azcarot/PasswordStorage/internal/storage"
 )
 
+// AddFileReq - запрос на добавление файла на сервер
 func AddFileReq(data storage.FileData) (bool, error) {
 	var b [16]byte
 	copy(b[:], storage.Secret)
@@ -71,6 +72,7 @@ func AddFileReq(data storage.FileData) (bool, error) {
 	return true, nil
 }
 
+// UpdateFileReq - запрос на обновление файловых данных на сервере
 func UpdateFileReq(data storage.FileData) (bool, error) {
 	var b [16]byte
 	copy(b[:], storage.Secret)
@@ -133,6 +135,7 @@ func UpdateFileReq(data storage.FileData) (bool, error) {
 	return true, nil
 }
 
+// DeleteFileReq - запрос на удаление файловых данных на сервере
 func DeleteFileReq(data storage.FileData) (bool, error) {
 	var b [16]byte
 	copy(b[:], storage.Secret)
@@ -194,6 +197,8 @@ func DeleteFileReq(data storage.FileData) (bool, error) {
 	return true, nil
 }
 
+// SyncFileReq - запрос на синхронизацию файловых данных, если хеши клиента и сервера
+// не различались, данные не трогаем
 func SyncFileReq() (bool, error) {
 	var err error
 	ctx := context.WithValue(context.Background(), storage.UserLoginCtxKey, storage.UserLoginPw.Login)

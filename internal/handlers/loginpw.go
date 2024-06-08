@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+// AddNewLoginPw - ручка сохранения данных типа логин/пароль
 func AddNewLoginPw(res http.ResponseWriter, req *http.Request) {
 	var userData storage.UserData
 	ctx := req.Context()
@@ -53,6 +54,7 @@ func AddNewLoginPw(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusAccepted)
 }
 
+// GetLoginPW - ручка получения записи логин/пароль по id
 func GetLoginPW(res http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	_, ok := req.Context().Value(storage.UserLoginCtxKey).(string)
@@ -99,6 +101,7 @@ func GetLoginPW(res http.ResponseWriter, req *http.Request) {
 
 }
 
+// UpdateLoginPW - ручка обновления записи типа логин/пароль по id
 func UpdateLoginPW(res http.ResponseWriter, req *http.Request) {
 	var userData storage.UserData
 	ctx := req.Context()
@@ -158,6 +161,7 @@ func UpdateLoginPW(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusAccepted)
 }
 
+// DeleteLoginPW - ручка удаления записи типа логин/пароль по id
 func DeleteLoginPW(res http.ResponseWriter, req *http.Request) {
 	var userData storage.UserData
 	ctx := req.Context()
@@ -198,6 +202,7 @@ func DeleteLoginPW(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusOK)
 }
 
+// Поиск записи типа логин/пароль по строке
 func SearchLoginPW(res http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	_, ok := req.Context().Value(storage.UserLoginCtxKey).(string)
@@ -244,6 +249,7 @@ func SearchLoginPW(res http.ResponseWriter, req *http.Request) {
 
 }
 
+// GetAllLoginPWs - ручка получения всех данных типа логин/пароль для поьзователя
 func GetAllLoginPWs(res http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	_, ok := req.Context().Value(storage.UserLoginCtxKey).(string)

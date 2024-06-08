@@ -36,6 +36,8 @@ var bankChoices = bankCardCho{
 	Delete: "Delete card",
 }
 
+// CardMenuModel - основная функция для построения и работы с
+// моделью меню банковских карт
 func CardMenuModel() cardMenuModel {
 	return cardMenuModel{
 
@@ -166,6 +168,8 @@ func cvvValidator(s string) error {
 	return err
 }
 
+// AddCardModel - основная функция для построения и работы с
+// меню добавления новой карты
 func AddCardModel() cardModel {
 	var inputs []textinput.Model = make([]textinput.Model, 5)
 	newheader = "Please insert card data:"

@@ -17,6 +17,8 @@ type fileUpdateModel struct {
 	err     error
 }
 
+// UpdateFileModel - основная функция для работы с
+// меню обновления и сохранения на диск файла
 func UpdateFileModel() fileUpdateModel {
 	var inputs []textinput.Model = make([]textinput.Model, 3)
 	newheader = "Please check file data:"

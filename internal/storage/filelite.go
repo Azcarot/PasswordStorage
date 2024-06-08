@@ -10,14 +10,17 @@ import (
 	"strings"
 )
 
+// FileLiteStorage - хранилище файловых данных на клиенте
 type FileLiteStorage struct {
 	Storage PgxStorage
 	DB      *sql.DB
 	Data    FileData
 }
 
+// FLiteS - реализация хранилища файловых данных на клиенте
 var FLiteS PgxStorage
 
+// CreateNewRecord - создание новой записи с файловыми данными на клиенте
 func (store *FileLiteStorage) CreateNewRecord(ctx context.Context) error {
 	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
 	if !ok {
@@ -53,6 +56,7 @@ func (store *FileLiteStorage) CreateNewRecord(ctx context.Context) error {
 	return nil
 }
 
+// GetRecord - получение файловых данных на клиенте по id
 func (store *FileLiteStorage) GetRecord(ctx context.Context) (any, error) {
 	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
 
@@ -89,6 +93,7 @@ func (store *FileLiteStorage) GetRecord(ctx context.Context) (any, error) {
 	}
 }
 
+// UpdateRecord - обновление файловых данных на клиенте по id
 func (store *FileLiteStorage) UpdateRecord(ctx context.Context) error {
 	tx, err := store.DB.BeginTx(ctx, nil)
 	if err != nil {
@@ -115,6 +120,7 @@ func (store *FileLiteStorage) UpdateRecord(ctx context.Context) error {
 	return nil
 }
 
+// DeleteRecord - удаление фаловых данных с клиента по id
 func (store *FileLiteStorage) DeleteRecord(ctx context.Context) error {
 	tx, err := store.DB.BeginTx(ctx, nil)
 	if err != nil {
@@ -135,6 +141,7 @@ func (store *FileLiteStorage) DeleteRecord(ctx context.Context) error {
 	return nil
 }
 
+// SearchRecord - поиск файловых данных на клиенте по строке
 func (store *FileLiteStorage) SearchRecord(ctx context.Context) (any, error) {
 	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
 
@@ -192,6 +199,7 @@ func (store *FileLiteStorage) SearchRecord(ctx context.Context) (any, error) {
 
 }
 
+// GetAllRecords - получение всех файловых данных пользователя на клиенте
 func (store *FileLiteStorage) GetAllRecords(ctx context.Context) (any, error) {
 	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
 
@@ -237,6 +245,7 @@ func (store *FileLiteStorage) GetAllRecords(ctx context.Context) (any, error) {
 
 }
 
+// CypherFileData - шифрование файловых данных пользователя на клиенте
 func (store *FileLiteStorage) CypherFileData(ctx context.Context) error {
 	var err error
 	store.Data.FileName, err = CypherData(ctx, store.Data.FileName)
@@ -265,6 +274,7 @@ func (store *FileLiteStorage) CypherFileData(ctx context.Context) error {
 	return err
 }
 
+// DeCypherFileData - дешифровка файловых данных на клиенте
 func (store *FileLiteStorage) DeCypherFileData(ctx context.Context) error {
 	var err error
 	store.Data.FileName, err = Dechypher(ctx, store.Data.FileName)
@@ -289,6 +299,7 @@ func (store *FileLiteStorage) DeCypherFileData(ctx context.Context) error {
 	return err
 }
 
+// HashDatabaseData - получение хэша из всех файловых данных пользователя на клиенте
 func (store *FileLiteStorage) HashDatabaseData(ctx context.Context) (string, error) {
 	fileData, err := store.GetAllRecords(ctx)
 	if err != nil {
@@ -306,6 +317,7 @@ func (store *FileLiteStorage) HashDatabaseData(ctx context.Context) (string, err
 	return hashString, nil
 }
 
+// NewFLiteStorage - реализация нового хранилища файловых данных на клиенте
 func NewFLiteStorage(storage PgxStorage, db *sql.DB) *FileLiteStorage {
 	return &FileLiteStorage{
 		Storage: storage,

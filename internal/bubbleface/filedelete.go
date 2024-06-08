@@ -16,6 +16,8 @@ type fileDeleteModel struct {
 	selected map[int]struct{}
 }
 
+// FileDeleteModel - основная функция для построения списка и удалением
+// файла
 func FileDeleteModel() fileDeleteModel {
 	ctx := context.WithValue(context.Background(), storage.UserLoginCtxKey, storage.UserLoginPw.Login)
 	var choices []string

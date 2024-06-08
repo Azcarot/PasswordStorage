@@ -37,6 +37,8 @@ var fileChoices = fileCho{
 	Delete: "Delete File",
 }
 
+// FileMenuModel - основная функция для построения и работы с
+// основным меню работы с файлами
 func FileMenuModel() fileMenuModel {
 	return fileMenuModel{
 
@@ -125,6 +127,8 @@ type fileModel struct {
 	err     error
 }
 
+// AddFileModel - основная функция для построения и работы с
+// меню добавления нового файла
 func AddFileModel() fileModel {
 	var inputs []textinput.Model = make([]textinput.Model, 3)
 	newheader = "Please insert file name/path:"

@@ -24,6 +24,7 @@ type LoginResponse struct {
 
 var jwtSecretKey = []byte(storage.SecretKey)
 
+// LoginUser - ручка авторизации пользователя
 func LoginUser(res http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	for {

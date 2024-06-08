@@ -10,14 +10,17 @@ import (
 	"strings"
 )
 
+// LPWLiteStorage - хранилище данных типа логин/пароль на клиенте
 type LPWLiteStorage struct {
 	Storage PgxStorage
 	DB      *sql.DB
 	Data    LoginData
 }
 
+// LPWLiteS - реализация хранилища данных типа логин/пароль на клиенте
 var LPWLiteS PgxStorage
 
+// CreateNewRecord - создание новой записи с файловыми данными на клиенте
 func (store *LPWLiteStorage) CreateNewRecord(ctx context.Context) error {
 	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
 	if !ok {
@@ -52,6 +55,7 @@ func (store *LPWLiteStorage) CreateNewRecord(ctx context.Context) error {
 	return nil
 }
 
+// GetRecord - получение данных типа логин/пароль на клиенте по id
 func (store *LPWLiteStorage) GetRecord(ctx context.Context) (any, error) {
 	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
 
@@ -87,6 +91,7 @@ func (store *LPWLiteStorage) GetRecord(ctx context.Context) (any, error) {
 	}
 }
 
+// UpdateRecord - обновление данных типа логин/пароль на клиенте по id
 func (store *LPWLiteStorage) UpdateRecord(ctx context.Context) error {
 	tx, err := store.DB.BeginTx(ctx, nil)
 	if err != nil {
@@ -113,6 +118,7 @@ func (store *LPWLiteStorage) UpdateRecord(ctx context.Context) error {
 	return nil
 }
 
+// DeleteRecord - удаление данных типа логин/пароль с клиента по id
 func (store *LPWLiteStorage) DeleteRecord(ctx context.Context) error {
 	tx, err := store.DB.BeginTx(ctx, nil)
 	if err != nil {
@@ -133,6 +139,7 @@ func (store *LPWLiteStorage) DeleteRecord(ctx context.Context) error {
 	return nil
 }
 
+// SearchRecord - поиск данных типа логин/пароль на клиенте по строке
 func (store *LPWLiteStorage) SearchRecord(ctx context.Context) (any, error) {
 	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
 
@@ -188,6 +195,7 @@ func (store *LPWLiteStorage) SearchRecord(ctx context.Context) (any, error) {
 
 }
 
+// GetAllRecords - получение всех данных типа логин/пароль пользователя на клиенте
 func (store *LPWLiteStorage) GetAllRecords(ctx context.Context) (any, error) {
 	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
 
@@ -231,6 +239,7 @@ func (store *LPWLiteStorage) GetAllRecords(ctx context.Context) (any, error) {
 
 }
 
+// CypherLPWData - шифрование данных типа логин/пароль пользователя на клиенте
 func (store *LPWLiteStorage) CypherLPWData(ctx context.Context) error {
 	var err error
 	store.Data.Login, err = CypherData(ctx, store.Data.Login)
@@ -253,6 +262,7 @@ func (store *LPWLiteStorage) CypherLPWData(ctx context.Context) error {
 	return err
 }
 
+// DeCypherLPWData - дешифровка данных типа логин/пароль на клиенте
 func (store *LPWLiteStorage) DeCypherLPWData(ctx context.Context) error {
 	var err error
 	store.Data.Login, err = Dechypher(ctx, store.Data.Login)
@@ -271,6 +281,7 @@ func (store *LPWLiteStorage) DeCypherLPWData(ctx context.Context) error {
 	return err
 }
 
+// HashDatabaseData - получение хэша из всех данных типа логин/пароль пользователя на клиенте
 func (store *LPWLiteStorage) HashDatabaseData(ctx context.Context) (string, error) {
 	textData, err := store.GetAllRecords(ctx)
 	if err != nil {
@@ -288,6 +299,7 @@ func (store *LPWLiteStorage) HashDatabaseData(ctx context.Context) (string, erro
 	return hashString, nil
 }
 
+// NewLPLiteStorage - реализация нового хранилища данных типа логин/пароль на клиенте
 func NewLPLiteStorage(storage PgxStorage, db *sql.DB) *LPWLiteStorage {
 	return &LPWLiteStorage{
 		Storage: storage,

@@ -8,6 +8,8 @@ import (
 	"github.com/Azcarot/PasswordStorage/internal/storage"
 )
 
+// SyncBankData Ручка синхронизации банковских данных пользователя, сравнивает хэши
+// данных с сервера и с клиента, при разнице в хэшах возвращает серверные данные
 func SyncBankData(res http.ResponseWriter, req *http.Request) {
 	var userData storage.UserData
 	ctx := req.Context()
@@ -57,6 +59,8 @@ func SyncBankData(res http.ResponseWriter, req *http.Request) {
 	res.Write(jsonData)
 }
 
+// SyncTextData Ручка синхронизации текстовых данных пользователя, сравнивает хэши
+// данных с сервера и с клиента, при разнице в хэшах возвращает серверные данные
 func SyncTextData(res http.ResponseWriter, req *http.Request) {
 	var userData storage.UserData
 	ctx := req.Context()
@@ -107,6 +111,8 @@ func SyncTextData(res http.ResponseWriter, req *http.Request) {
 	res.Write(jsonData)
 }
 
+// SyncLPWData Ручка синхронизации данных пользователя типа логин/пароль, сравнивает хэши
+// данных с сервера и с клиента, при разнице в хэшах возвращает серверные данные
 func SyncLPWData(res http.ResponseWriter, req *http.Request) {
 	var userData storage.UserData
 	ctx := req.Context()
@@ -157,6 +163,8 @@ func SyncLPWData(res http.ResponseWriter, req *http.Request) {
 	res.Write(jsonData)
 }
 
+// SyncFileData Ручка синхронизации файловых данных пользователя, сравнивает хэши
+// данных с сервера и с клиента, при разнице в хэшах возвращает серверные данные
 func SyncFileData(res http.ResponseWriter, req *http.Request) {
 	var userData storage.UserData
 	ctx := req.Context()

@@ -17,6 +17,8 @@ type fileViewModel struct {
 
 var selectedFile storage.FileResponse
 
+// FileViewModel - основная функция для построения и просмотра
+// списка сохраненных файлов
 func FileViewModel() fileViewModel {
 	ctx := context.WithValue(context.Background(), storage.UserLoginCtxKey, storage.UserLoginPw.Login)
 	var choices []string

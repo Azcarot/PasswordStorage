@@ -15,6 +15,7 @@ type Payload struct {
 	Exp   int64
 }
 
+// Registration - ручка для регистрации пользователя, с выдачей ключа авторизации
 func Registration(res http.ResponseWriter, req *http.Request) {
 
 	regData := storage.RegisterRequest{}

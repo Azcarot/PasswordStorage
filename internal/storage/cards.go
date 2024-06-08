@@ -1,3 +1,5 @@
+// Package storage - описание и реализация всех методов взаимодействия с хранилищами
+// на сервере и клиенте
 package storage
 
 import (
@@ -9,6 +11,7 @@ import (
 	"strings"
 )
 
+// CreateNewRecord - создание новой записи для банковских карт в бд сервера
 func (store *BankCardStorage) CreateNewRecord(ctx context.Context) error {
 	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
 	if !ok {
@@ -38,6 +41,7 @@ func (store *BankCardStorage) CreateNewRecord(ctx context.Context) error {
 	return nil
 }
 
+// GetRecord - получение записи для банковских карт в бд сервера по id
 func (store *BankCardStorage) GetRecord(ctx context.Context) (any, error) {
 	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
 
@@ -76,6 +80,7 @@ func (store *BankCardStorage) GetRecord(ctx context.Context) (any, error) {
 	}
 }
 
+// UpdateRecord - обновление записи для банковских карт в бд сервера  по ее id
 func (store *BankCardStorage) UpdateRecord(ctx context.Context) error {
 	tx, err := store.DB.Begin(ctx)
 	if err != nil {
@@ -103,6 +108,7 @@ func (store *BankCardStorage) UpdateRecord(ctx context.Context) error {
 	return nil
 }
 
+// DeleteRecord - удаление записи для банковских карт в бд сервера  по id
 func (store *BankCardStorage) DeleteRecord(ctx context.Context) error {
 	tx, err := store.DB.Begin(ctx)
 	if err != nil {
@@ -123,6 +129,7 @@ func (store *BankCardStorage) DeleteRecord(ctx context.Context) error {
 	return nil
 }
 
+// SearchRecord - поиск записи для банковских карт в бд сервера по строке
 func (store *BankCardStorage) SearchRecord(ctx context.Context) (any, error) {
 	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
 
@@ -183,6 +190,7 @@ func (store *BankCardStorage) SearchRecord(ctx context.Context) (any, error) {
 
 }
 
+// GetAllRecords - получение всех запрошенных данных пользователя для банковских карт из бд сервера
 func (store *BankCardStorage) GetAllRecords(ctx context.Context) (any, error) {
 	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
 
@@ -232,6 +240,7 @@ func (store *BankCardStorage) GetAllRecords(ctx context.Context) (any, error) {
 
 }
 
+// CypherBankData - шифрование секретом данных типа банковских карт
 func (store *BankCardStorage) CypherBankData(ctx context.Context) error {
 	var err error
 	store.Data.CardNumber, err = CypherData(ctx, store.Data.CardNumber)
@@ -261,6 +270,7 @@ func (store *BankCardStorage) CypherBankData(ctx context.Context) error {
 	return err
 }
 
+// DeCypherBankData - дешифровка данных типа банковских карт
 func (store *BankCardStorage) DeCypherBankData(ctx context.Context) error {
 	var err error
 	store.Data.CardNumber, err = Dechypher(ctx, store.Data.CardNumber)
@@ -286,6 +296,7 @@ func (store *BankCardStorage) DeCypherBankData(ctx context.Context) error {
 	return err
 }
 
+// HashDataBaseData - получения хэша из данных пользователя для типа банковских карт на сервере
 func (store BankCardStorage) HashDatabaseData(ctx context.Context) (string, error) {
 	bankData, err := store.GetAllRecords(ctx)
 	if err != nil {
