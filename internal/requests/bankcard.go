@@ -22,7 +22,6 @@ func AddCardReq(data storage.BankCardData) (bool, error) {
 	var cyphData storage.BankCardData
 	var err error
 	cyphData.CardNumber, err = storage.CypherData(ctx, data.CardNumber)
-
 	if err != nil {
 		return false, err
 	}
@@ -49,8 +48,8 @@ func AddCardReq(data storage.BankCardData) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	regURL := "http://" + storage.ServURL + "/api/user/card/add"
-	req, err := http.NewRequest("POST", regURL, bytes.NewBuffer(jsonData))
+	regURL := storage.ServURL + "/api/user/card/add"
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, regURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return false, err
 	}
@@ -113,7 +112,7 @@ func UpdateCardReq(data storage.BankCardData) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	regURL := "http://" + storage.ServURL + "/api/user/card/update"
+	regURL := storage.ServURL + "/api/user/card/update"
 	req, err := http.NewRequest("POST", regURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return false, err
@@ -177,7 +176,7 @@ func DeleteCardReq(data storage.BankCardData) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	regURL := "http://" + storage.ServURL + "/api/user/card/delete"
+	regURL := storage.ServURL + "/api/user/card/delete"
 	req, err := http.NewRequest("POST", regURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return false, err
@@ -217,7 +216,7 @@ func SyncCardReq() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	regURL := "http://" + storage.ServURL + "/api/user/card/sync"
+	regURL := storage.ServURL + "/api/user/card/sync"
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, regURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return false, err

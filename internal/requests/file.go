@@ -45,7 +45,7 @@ func AddFileReq(data storage.FileData) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	regURL := "http://" + storage.ServURL + "/api/user/file/add"
+	regURL := storage.ServURL + "/api/user/file/add"
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, regURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return false, err
@@ -108,7 +108,7 @@ func UpdateFileReq(data storage.FileData) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	regURL := "http://" + storage.ServURL + "/api/user/file/update"
+	regURL := storage.ServURL + "/api/user/file/update"
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, regURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return false, err
@@ -170,7 +170,7 @@ func DeleteFileReq(data storage.FileData) (bool, error) {
 		return false, err
 	}
 
-	regURL := "http://" + storage.ServURL + "/api/user/file/delete"
+	regURL := storage.ServURL + "/api/user/file/delete"
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, regURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return false, err
@@ -210,7 +210,7 @@ func SyncFileReq() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	regURL := "http://" + storage.ServURL + "/api/user/file/sync"
+	regURL := storage.ServURL + "/api/user/file/sync"
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, regURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return false, err

@@ -32,7 +32,7 @@ func AddTextReq(data storage.TextData) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	regURL := "http://" + storage.ServURL + "/api/user/text/add"
+	regURL := storage.ServURL + "/api/user/text/add"
 	req, err := http.NewRequest("POST", regURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return false, err
@@ -82,7 +82,7 @@ func DeleteTextReq(data storage.TextData) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	regURL := "http://" + storage.ServURL + "/api/user/text/delete"
+	regURL := storage.ServURL + "/api/user/text/delete"
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, regURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return false, err
@@ -133,7 +133,7 @@ func UpdateTextReq(data storage.TextData) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	regURL := "http://" + storage.ServURL + "/api/user/text/update"
+	regURL := storage.ServURL + "/api/user/text/update"
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, regURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return false, err
@@ -173,7 +173,7 @@ func SyncTextReq() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	regURL := "http://" + storage.ServURL + "/api/user/text/sync"
+	regURL := storage.ServURL + "/api/user/text/sync"
 	req, err := http.NewRequest("GET", regURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return false, err

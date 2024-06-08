@@ -38,7 +38,7 @@ func AddLPWReq(data storage.LoginData) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	regURL := "http://" + storage.ServURL + "/api/user/lpw/add"
+	regURL := storage.ServURL + "/api/user/lpw/add"
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, regURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return false, err
@@ -94,7 +94,7 @@ func UpdateLPWReq(data storage.LoginData) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	regURL := "http://" + storage.ServURL + "/api/user/lpw/update"
+	regURL := storage.ServURL + "/api/user/lpw/update"
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, regURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return false, err
@@ -151,7 +151,7 @@ func DeleteLPWReq(data storage.LoginData) (bool, error) {
 		return false, err
 	}
 
-	regURL := "http://" + storage.ServURL + "/api/user/lpw/delete"
+	regURL := storage.ServURL + "/api/user/lpw/delete"
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, regURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return false, err
@@ -191,7 +191,7 @@ func SyncLPWReq() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	regURL := "http://" + storage.ServURL + "/api/user/lpw/sync"
+	regURL := storage.ServURL + "/api/user/lpw/sync"
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, regURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return false, err

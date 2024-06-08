@@ -19,7 +19,7 @@ func LoginReq(data handlers.LoginRequest) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	regURL := "http://" + storage.ServURL + "/api/user/login"
+	regURL := storage.ServURL + "/api/user/login"
 	req, err := http.NewRequest("POST", regURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return false, err

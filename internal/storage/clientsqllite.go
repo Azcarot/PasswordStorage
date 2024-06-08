@@ -90,7 +90,7 @@ func NewLiteConn(f utils.Flags) error {
 		err = connectToLiteDB(f)
 
 	}
-	ServURL = f.FlagAddr
+	ServURL = "http://" + f.FlagAddr
 	return nil
 }
 

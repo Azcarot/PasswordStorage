@@ -18,7 +18,7 @@ func RegistrationReq(data storage.RegisterRequest) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	regURL := "http://" + storage.ServURL + "/api/user/register"
+	regURL := storage.ServURL + "/api/user/register"
 	req, err := http.NewRequest("POST", regURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return false, err
