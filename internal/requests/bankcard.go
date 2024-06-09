@@ -263,6 +263,9 @@ func SyncCardReq() (bool, error) {
 			return false, err
 		}
 		var newBankData []storage.BankCardData
+		if _, ok := newData.([]storage.BankCardResponse); !ok {
+			return false, nil
+		}
 		for _, card := range newData.([]storage.BankCardResponse) {
 			var data storage.BankCardData
 			data.ID = card.ID
