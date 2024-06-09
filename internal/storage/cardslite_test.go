@@ -1,87 +1,11 @@
-// Package storage - описание и реализация всех методов взаимодействия с хранилищами
-
-// на сервере и клиенте
-
 package storage
 
 import (
 	"context"
-	"database/sql"
-	"fmt"
-	"log"
-	"os"
 	"testing"
-
-	"github.com/Azcarot/PasswordStorage/internal/utils"
-	"github.com/jackc/pgx/v5"
 )
 
-func TestMain(m *testing.M) {
-	// os.Exit skips defer calls
-	// so we need to call another function
-	code, err := run(m)
-	if err != nil {
-		fmt.Println(err)
-	}
-	os.Exit(code)
-}
-
-func run(m *testing.M) (code int, err error) {
-	var f utils.Flags
-	f.FlagDBAddr = "host='localhost' user='postgres' password='12345' sslmode=disable"
-	DB, err = pgx.Connect(context.Background(), f.FlagDBAddr)
-	if err != nil {
-		//handle the error
-		log.Fatal(err)
-	}
-	ST = MakeConn(DB)
-	dbName := "testdb"
-	ctx := context.Background()
-	_, err = DB.Exec(ctx, "DROP DATABASE IF EXISTS "+dbName)
-	if err != nil {
-		//handle the error
-		log.Fatal(err)
-	}
-	_, err = DB.Exec(ctx, "create database "+dbName)
-	if err != nil {
-		//handle the error
-		log.Fatal(err)
-	}
-	ST.CreateTablesForGoKeeper()
-	_, err = os.Stat("test.db")
-	if err == nil {
-		err = os.Remove("test.db")
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-	LiteDB, err = sql.Open("sqlite", "test.db")
-	LiteST = MakeLiteConn(LiteDB)
-	LiteST.CreateTablesForGoKeeper()
-
-	// truncates all test data after the tests are run
-	defer func() {
-
-		_, _ = DB.Exec(ctx, fmt.Sprintf("DELETE FROM %s", "bank_card"))
-		_, _ = DB.Exec(ctx, fmt.Sprintf("DELETE FROM %s", "file_data"))
-		_, _ = DB.Exec(ctx, fmt.Sprintf("DELETE FROM %s", "text_data"))
-		_, _ = DB.Exec(ctx, fmt.Sprintf("DELETE FROM %s", "login_pw"))
-		os.Remove("test.db")
-
-		DB.Close(ctx)
-	}()
-	BCST = NewBCStorage(BCST, DB)
-	BCLiteS = NewBCLiteStorage(BCLiteS, LiteDB)
-	FST = NewFSTtorage(FST, DB)
-	FLiteS = NewFLiteStorage(FLiteS, LiteDB)
-	LPST = NewLPSTtorage(LPST, DB)
-	LPWLiteS = NewLPLiteStorage(LPWLiteS, LiteDB)
-	TST = NewTSTtorage(TST, DB)
-	TLiteS = NewTLiteStorage(TLiteS, LiteDB)
-	return m.Run(), nil
-}
-
-func TestCardSQL_CreateNewRecord(t *testing.T) {
+func TestCardLiteSQL_CreateNewRecord(t *testing.T) {
 	type args struct {
 		data    BankCardData
 		wantErr bool
@@ -92,20 +16,20 @@ func TestCardSQL_CreateNewRecord(t *testing.T) {
 		name string
 		args args
 	}{
-		{name: "No secret", args: args{data: BankCardData{ID: 1, CardNumber: "11", User: "User", ExpDate: "ExpDate"}, wantErr: true}},
+		{name: "No secret", args: args{data: BankCardData{ID: 1, CardNumber: "11", User: "User", ExpDate: "ExpDate"}, wantErr: false}},
 		{name: "Secret", args: args{data: BankCardData{ID: 1, CardNumber: "11", User: "User", ExpDate: "ExpDate"}, secret: "secret", wantErr: false}},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			BCST.AddData(tt.args.data)
+			BCLiteS.AddData(tt.args.data)
 			ctx := context.WithValue(context.Background(), UserLoginCtxKey, tt.args.data.User)
 			if len(tt.args.secret) != 0 {
 				var b [16]byte
 				copy(b[:], Secret)
 				ctx = context.WithValue(ctx, EncryptionCtxKey, b)
 			}
-			err := BCST.CreateNewRecord(ctx)
+			err := BCLiteS.CreateNewRecord(ctx)
 			if (err != nil) != tt.args.wantErr {
 				t.Errorf("AddCardReq() error = %v, wantErr %v, test %v", err, tt.args.wantErr, tt.name)
 				return
@@ -114,7 +38,7 @@ func TestCardSQL_CreateNewRecord(t *testing.T) {
 	}
 }
 
-func TestCardSQL_UpdateRecord(t *testing.T) {
+func TestCardLiteSQL_UpdateRecord(t *testing.T) {
 	type args struct {
 		data    BankCardData
 		wantErr bool
@@ -131,14 +55,14 @@ func TestCardSQL_UpdateRecord(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			BCST.AddData(tt.args.data)
+			BCLiteS.AddData(tt.args.data)
 			ctx := context.WithValue(context.Background(), UserLoginCtxKey, tt.args.data.User)
 			if len(tt.args.secret) != 0 {
 				var b [16]byte
 				copy(b[:], Secret)
 				ctx = context.WithValue(ctx, EncryptionCtxKey, b)
 			}
-			err := BCST.UpdateRecord(ctx)
+			err := BCLiteS.UpdateRecord(ctx)
 			if (err != nil) != tt.args.wantErr {
 				t.Errorf("UpdateReq() error = %v, wantErr %v, test %v", err, tt.args.wantErr, tt.name)
 				return
@@ -147,7 +71,7 @@ func TestCardSQL_UpdateRecord(t *testing.T) {
 	}
 }
 
-func TestCardSQL_DeleteRecord(t *testing.T) {
+func TestCardLiteSQL_DeleteRecord(t *testing.T) {
 	type args struct {
 		data    BankCardData
 		wantErr bool
@@ -163,14 +87,14 @@ func TestCardSQL_DeleteRecord(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			BCST.AddData(tt.args.data)
+			BCLiteS.AddData(tt.args.data)
 			ctx := context.WithValue(context.Background(), UserLoginCtxKey, tt.args.data.User)
 			if len(tt.args.secret) != 0 {
 				var b [16]byte
 				copy(b[:], Secret)
 				ctx = context.WithValue(ctx, EncryptionCtxKey, b)
 			}
-			err := BCST.DeleteRecord(ctx)
+			err := BCLiteS.DeleteRecord(ctx)
 			if (err != nil) != tt.args.wantErr {
 				t.Errorf("DeleteReq() error = %v, wantErr %v, test %v", err, tt.args.wantErr, tt.name)
 				return
@@ -179,7 +103,7 @@ func TestCardSQL_DeleteRecord(t *testing.T) {
 	}
 }
 
-func TestCardSQL_GetAllRecords(t *testing.T) {
+func TestCardLiteSQL_GetAllRecords(t *testing.T) {
 	type args struct {
 		data    BankCardData
 		wantErr bool
@@ -197,7 +121,7 @@ func TestCardSQL_GetAllRecords(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			BCST.AddData(tt.args.data)
+			BCLiteS.AddData(tt.args.data)
 			var ctx context.Context
 			if len(tt.args.data.User) != 0 {
 				ctx = context.WithValue(context.Background(), UserLoginCtxKey, tt.args.data.User)
@@ -210,32 +134,10 @@ func TestCardSQL_GetAllRecords(t *testing.T) {
 				copy(b[:], Secret)
 				ctx = context.WithValue(ctx, EncryptionCtxKey, b)
 			}
-			_, err := BCST.GetAllRecords(ctx)
+			_, err := BCLiteS.GetAllRecords(ctx)
 			if (err != nil) != tt.args.wantErr {
 				t.Errorf("GetAllRecordsReq() error = %v, wantErr %v, test %v", err, tt.args.wantErr, tt.name)
 				return
-			}
-		})
-	}
-}
-
-func TestNewConn(t *testing.T) {
-	type args struct {
-		f utils.Flags
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{name: "normal data",
-			args: args{f: utils.Flags{FlagDBAddr: "host='localhost' user='postgres' password='12345' sslmode=disable"}}, wantErr: false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := NewConn(tt.args.f); (err != nil) != tt.wantErr {
-				t.Errorf("NewConn() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
