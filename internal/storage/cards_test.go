@@ -57,6 +57,8 @@ func run(m *testing.M) (code int, err error) {
 	}()
 	BCST = NewBCStorage(BCST, DB)
 	FST = NewFSTtorage(FST, DB)
+	LPST = NewLPSTtorage(LPST, DB)
+	TST = NewTSTtorage(TST, DB)
 	return m.Run(), nil
 }
 
