@@ -51,14 +51,16 @@ func run(m *testing.M) (code int, err error) {
 	defer func() {
 
 		_, _ = DB.Exec(ctx, fmt.Sprintf("DELETE FROM %s", "bank_card"))
+		_, _ = DB.Exec(ctx, fmt.Sprintf("DELETE FROM %s", "file_data"))
 
 		DB.Close(ctx)
 	}()
 	BCST = NewBCStorage(BCST, DB)
+	FST = NewFSTtorage(FST, DB)
 	return m.Run(), nil
 }
 
-func TestSQL_CreateNewRecord(t *testing.T) {
+func TestCardSQL_CreateNewRecord(t *testing.T) {
 	type args struct {
 		data    BankCardData
 		wantErr bool
@@ -91,7 +93,7 @@ func TestSQL_CreateNewRecord(t *testing.T) {
 	}
 }
 
-func TestSQL_UpdateRecord(t *testing.T) {
+func TestCardSQL_UpdateRecord(t *testing.T) {
 	type args struct {
 		data    BankCardData
 		wantErr bool
@@ -124,7 +126,7 @@ func TestSQL_UpdateRecord(t *testing.T) {
 	}
 }
 
-func TestSQL_DeleteRecord(t *testing.T) {
+func TestCardSQL_DeleteRecord(t *testing.T) {
 	type args struct {
 		data    BankCardData
 		wantErr bool
@@ -156,7 +158,7 @@ func TestSQL_DeleteRecord(t *testing.T) {
 	}
 }
 
-func TestSQL_GetAllRecords(t *testing.T) {
+func TestCardSQL_GetAllRecords(t *testing.T) {
 	type args struct {
 		data    BankCardData
 		wantErr bool
