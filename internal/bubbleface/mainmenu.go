@@ -1,8 +1,6 @@
 package face
 
 import (
-	"fmt"
-
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -50,8 +48,8 @@ func (m MainModel) View() string {
 	return m.currentModel.View()
 }
 
-// InitialModel - головное меню регистраци/авторизации
-func InitialModel() MainModel {
+// NewInitialModel - головное меню регистраци/авторизации
+func NewInitialModel() MainModel {
 	return MainModel{
 		// Список меню авторизации
 		currentModel: authModel{choices: []string{"Registration", "Log in"}, selected: make(map[int]struct{})},
@@ -60,12 +58,12 @@ func InitialModel() MainModel {
 
 // MakeTeaProg - создание инстанса баблти
 func MakeTeaProg() *tea.Program {
-	p := tea.NewProgram(InitialModel())
+	p := tea.NewProgram(NewInitialModel())
 	return p
 }
 
-// MainMenuModel - пострение главного меню для работы со всеми типами данных
-func MainMenuModel() mainMenuModel {
+// NewMainMenuModel - пострение главного меню для работы со всеми типами данных
+func NewMainMenuModel() mainMenuModel {
 	return mainMenuModel{
 		// Список основного меню
 		choices: []string{mainChoices.Login, mainChoices.Card, mainChoices.Text, mainChoices.File},
@@ -114,9 +112,9 @@ func (m authModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				m.selected[m.cursor] = struct{}{}
 				if m.choices[m.cursor] == "Registration" {
-					return AuthRegModel(), nil
+					return NewAuthRegModel(), nil
 				} else {
-					return AuthModel(), nil
+					return NewAuthModel(), nil
 				}
 			}
 		}
@@ -129,48 +127,17 @@ func (m authModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m authModel) View() string {
 	// The header
-	s := "Authorization\n\n"
+	newheader := "Authorization\n\n"
 
-	for i, choice := range m.choices {
-
-		cursor := " "
-		if m.cursor == i {
-			cursor = ">"
-		}
-
-		checked := " "
-		if _, ok := m.selected[i]; ok {
-			checked = "x"
-		}
-
-		s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, choice)
-	}
-
-	s += "\nPress q to quit.\n"
+	s := buildView(m, newheader)
 
 	return s
 }
 
 func (m mainMenuModel) View() string {
 
-	s := "Main menu, please select what type of data you whant to interract with:\n\n"
-
-	for i, choice := range m.choices {
-
-		cursor := " "
-		if m.cursor == i {
-			cursor = ">"
-		}
-
-		checked := " "
-		if _, ok := m.selected[i]; ok {
-			checked = "x"
-		}
-
-		s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, choice)
-	}
-
-	s += "\nPress q to quit.\n"
+	newheader := "Main menu, please select what type of data you want to interact with:\n\n"
+	s := buildView(m, newheader)
 
 	return s
 }
@@ -202,16 +169,16 @@ func (m mainMenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				m.selected[m.cursor] = struct{}{}
 				if m.choices[m.cursor] == mainChoices.Card {
-					return CardMenuModel(), nil
+					return NewCardMenuModel(), nil
 				}
 				if m.choices[m.cursor] == mainChoices.Text {
-					return TextMenuModel(), nil
+					return NewTextMenuModel(), nil
 				}
 				if m.choices[m.cursor] == mainChoices.Login {
-					return LPWMenuModel(), nil
+					return NewLPWMenuModel(), nil
 				}
 				if m.choices[m.cursor] == mainChoices.File {
-					return FileMenuModel(), nil
+					return NewFileMenuModel(), nil
 				}
 			}
 		}

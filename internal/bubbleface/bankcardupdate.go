@@ -15,11 +15,12 @@ type cardUpdateModel struct {
 	err     error
 }
 
-// UpdateCardModel - основная функция для построения и работы с
+var cardUpdateHeader string = "Please insert card data:"
+
+// NewUpdateCardModel - основная функция для построения и работы с
 // меню просмотра/обновления карты
-func UpdateCardModel() cardUpdateModel {
+func NewUpdateCardModel() cardUpdateModel {
 	var inputs []textinput.Model = make([]textinput.Model, 5)
-	newheader = "Please insert card data:"
 	inputs[ccn] = textinput.New()
 	inputs[ccn].Placeholder = "4505 **** **** 1234"
 	inputs[ccn].Focus()
@@ -88,15 +89,15 @@ func (m cardUpdateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				ok, err := requests.UpdateCardReq(req)
 
 				if err != nil {
-					newheader = "Something went wrong, please try again"
-					return CardViewModel(), nil
+					cardUpdateHeader = "Something went wrong, please try again"
+					return NewCardViewModel(), nil
 				}
 				if !ok {
-					newheader = "Wrond card data, try again"
-					return CardViewModel(), nil
+					cardUpdateHeader = "Wrond card data, try again"
+					return NewCardViewModel(), nil
 				}
-				newheader = "Card succsesfully updated!"
-				return CardViewModel(), tea.ClearScreen
+				cardUpdateHeader = "Card succsesfully updated!"
+				return NewCardViewModel(), tea.ClearScreen
 			}
 			m.nextInput()
 		case tea.KeyCtrlC, tea.KeyEsc:
@@ -106,7 +107,7 @@ func (m cardUpdateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyTab, tea.KeyCtrlN:
 			m.nextInput()
 		case tea.KeyCtrlB:
-			return CardMenuModel(), tea.ClearScreen
+			return NewCardMenuModel(), tea.ClearScreen
 
 		}
 
@@ -143,7 +144,7 @@ func (m cardUpdateModel) View() string {
 
  press ctrl+B to go to previous menu
 `,
-		newheader,
+		cardUpdateHeader,
 		inputStyle.Width(30).Render("Card Number"),
 		m.inputs[ccn].View(),
 		inputStyle.Width(6).Render("EXP"),

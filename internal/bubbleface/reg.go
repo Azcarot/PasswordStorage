@@ -42,8 +42,8 @@ type regmodel struct {
 var pauseTicker chan bool
 var resumeTicker chan bool
 
-// AuthRegModel - главное меню регистрации с последующей авторизацией
-func AuthRegModel() regmodel {
+// NewAuthRegModel - главное меню регистрации с последующей авторизацией
+func NewAuthRegModel() regmodel {
 	var inputs []textinput.Model = make([]textinput.Model, 2)
 	inputs[login] = textinput.New()
 	inputs[login].Placeholder = "Ivan ivanov"
@@ -84,11 +84,11 @@ func (m regmodel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				ok, err := requests.RegistrationReq(req)
 				if err != nil {
 					newheader = "Please enter your credentials"
-					return AuthRegModel(), nil
+					return NewAuthRegModel(), nil
 				}
 				if !ok {
 					newheader = "User already exists"
-					return AuthRegModel(), tea.ClearScreen
+					return NewAuthRegModel(), tea.ClearScreen
 				}
 				storage.UserLoginPw.Login = req.Login
 				storage.UserLoginPw.Password = req.Password
@@ -112,7 +112,7 @@ func (m regmodel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						}
 					}
 				}()
-				return MainMenuModel(), nil
+				return NewMainMenuModel(), nil
 			}
 			m.nextInput()
 		case tea.KeyCtrlC, tea.KeyEsc:
@@ -123,7 +123,7 @@ func (m regmodel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.nextInput()
 
 		case tea.KeyCtrlB:
-			return InitialModel(), tea.ClearScreen
+			return NewInitialModel(), tea.ClearScreen
 
 		}
 

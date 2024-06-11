@@ -20,6 +20,9 @@ const (
 
 const maxAllowedFileSize int64 = 2e+6
 
+var menuFileHeader string = "Main file menu, please chose your action:\n\n"
+var addFileHeader string = "Please insert file name/path:"
+
 type fileMenuModel struct {
 	choices  []string
 	cursor   int
@@ -37,9 +40,9 @@ var fileChoices = fileCho{
 	Delete: "Delete File",
 }
 
-// FileMenuModel - основная функция для построения и работы с
+// NewFileMenuModel - основная функция для построения и работы с
 // основным меню работы с файлами
-func FileMenuModel() fileMenuModel {
+func NewFileMenuModel() fileMenuModel {
 	return fileMenuModel{
 
 		choices: []string{fileChoices.Add, fileChoices.View, fileChoices.Delete},
@@ -53,24 +56,8 @@ func (m fileMenuModel) Init() tea.Cmd {
 }
 
 func (m fileMenuModel) View() string {
-	s := "Main file menu, please chose your action:\n\n"
 
-	for i, choice := range m.choices {
-
-		cursor := " "
-		if m.cursor == i {
-			cursor = ">"
-		}
-
-		checked := " "
-		if _, ok := m.selected[i]; ok {
-			checked = "x"
-		}
-
-		s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, choice)
-	}
-
-	s += "\nPress q to quit.\n"
+	s := buildView(m, menuFileHeader)
 
 	return s
 }
@@ -95,7 +82,7 @@ func (m fileMenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.cursor++
 			}
 		case "ctrl+b":
-			return MainMenuModel(), nil
+			return NewMainMenuModel(), nil
 
 		case "enter", " ":
 			_, ok := m.selected[m.cursor]
@@ -106,13 +93,13 @@ func (m fileMenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				m.selected[m.cursor] = struct{}{}
 				if m.choices[m.cursor] == fileChoices.Add {
-					return AddFileModel(), nil
+					return NewAddFileModel(), nil
 				}
 				if m.choices[m.cursor] == fileChoices.View {
-					return FileViewModel(), nil
+					return NewFileViewModel(), nil
 				}
 				if m.choices[m.cursor] == fileChoices.Delete {
-					return FileDeleteModel(), nil
+					return NewFileDeleteModel(), nil
 				}
 			}
 		}
@@ -127,11 +114,10 @@ type fileModel struct {
 	err     error
 }
 
-// AddFileModel - основная функция для построения и работы с
+// NewAddFileModel - основная функция для построения и работы с
 // меню добавления нового файла
-func AddFileModel() fileModel {
+func NewAddFileModel() fileModel {
 	var inputs []textinput.Model = make([]textinput.Model, 3)
-	newheader = "Please insert file name/path:"
 	inputs[finm] = textinput.New()
 	inputs[finm].Placeholder = "Some file"
 	inputs[finm].Focus()
@@ -176,22 +162,22 @@ func (m fileModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				req.Path = strings.TrimSpace(req.Path)
 				data, err := checkFileSizeAndRead(req.Path)
 				if err != nil {
-					newheader = "Failed to get file data, please try again"
-					return AddFileModel(), tea.ClearScreen
+					addFileHeader = "Failed to get file data, please try again"
+					return NewAddFileModel(), tea.ClearScreen
 				}
 				req.Data = data
 				ok, err := requests.AddFileReq(req)
 
 				if err != nil {
-					newheader = "Something went wrong, please try again"
-					return AddFileModel(), nil
+					addFileHeader = "Something went wrong, please try again"
+					return NewAddFileModel(), nil
 				}
 				if !ok {
-					newheader = "Wrond data, please try again"
-					return AddFileModel(), nil
+					addFileHeader = "Wrond data, please try again"
+					return NewAddFileModel(), nil
 				}
-				newheader = "File succsesfully saved!"
-				return AddFileModel(), tea.ClearScreen
+				addFileHeader = "File succsesfully saved!"
+				return NewAddFileModel(), tea.ClearScreen
 			}
 			m.nextInput()
 		case tea.KeyCtrlC, tea.KeyEsc:
@@ -201,7 +187,7 @@ func (m fileModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyTab, tea.KeyCtrlN:
 			m.nextInput()
 		case tea.KeyCtrlB:
-			return FileMenuModel(), tea.ClearScreen
+			return NewFileMenuModel(), tea.ClearScreen
 
 		}
 
@@ -239,7 +225,7 @@ func (m fileModel) View() string {
 
  press ctrl+B to go to previous menu
 `,
-		newheader,
+		addFileHeader,
 		inputStyle.Width(30).Render("File name"),
 		m.inputs[finm].View(),
 		inputStyle.Width(100).Render("File path"),

@@ -32,9 +32,12 @@ var lpwChoices = lpwCho{
 	Delete: "Delete login/password",
 }
 
-// LPWMenuModel - основная функция для построения и работы с
+var lpwMenuHeader string = "Main login/password menu, please chose your action:\n\n"
+var lpwAddHeader string = "Please insert login/password data:"
+
+// NewLPWMenuModel - основная функция для построения и работы с
 // основным меню действий с данными типа логин/пароль
-func LPWMenuModel() lpwMenuModel {
+func NewLPWMenuModel() lpwMenuModel {
 	return lpwMenuModel{
 
 		choices: []string{lpwChoices.Add, lpwChoices.View, lpwChoices.Delete},
@@ -48,24 +51,8 @@ func (m lpwMenuModel) Init() tea.Cmd {
 }
 
 func (m lpwMenuModel) View() string {
-	s := "Main login/password menu, please chose your action:\n\n"
 
-	for i, choice := range m.choices {
-
-		cursor := " "
-		if m.cursor == i {
-			cursor = ">"
-		}
-
-		checked := " "
-		if _, ok := m.selected[i]; ok {
-			checked = "x"
-		}
-
-		s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, choice)
-	}
-
-	s += "\nPress q to quit.\n"
+	s := buildView(m, lpwMenuHeader)
 
 	return s
 }
@@ -90,7 +77,7 @@ func (m lpwMenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.cursor++
 			}
 		case "ctrl+b":
-			return MainMenuModel(), nil
+			return NewMainMenuModel(), nil
 
 		case "enter", " ":
 			_, ok := m.selected[m.cursor]
@@ -101,13 +88,13 @@ func (m lpwMenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				m.selected[m.cursor] = struct{}{}
 				if m.choices[m.cursor] == lpwChoices.Add {
-					return AddLPWModel(), nil
+					return NewAddLPWModel(), nil
 				}
 				if m.choices[m.cursor] == lpwChoices.View {
-					return LPWViewModel(), nil
+					return NewLPWViewModel(), nil
 				}
 				if m.choices[m.cursor] == lpwChoices.Delete {
-					return LPWDeleteModel(), nil
+					return NewLPWDeleteModel(), nil
 				}
 			}
 		}
@@ -122,9 +109,8 @@ type lpwModel struct {
 	err     error
 }
 
-func AddLPWModel() lpwModel {
+func NewAddLPWModel() lpwModel {
 	var inputs []textinput.Model = make([]textinput.Model, 3)
-	newheader = "Please insert login/password data:"
 	inputs[lgn] = textinput.New()
 	inputs[lgn].Placeholder = "Login **************"
 	inputs[lgn].Focus()
@@ -170,15 +156,15 @@ func (m lpwModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				ok, err := requests.AddLPWReq(req)
 
 				if err != nil {
-					newheader = "Something went wrong, please try again"
-					return AddLPWModel(), nil
+					lpwAddHeader = "Something went wrong, please try again"
+					return NewAddLPWModel(), nil
 				}
 				if !ok {
-					newheader = "Wrond data, please try again"
-					return AddLPWModel(), nil
+					lpwAddHeader = "Wrond data, please try again"
+					return NewAddLPWModel(), nil
 				}
-				newheader = "Text succsesfully saved!"
-				return AddLPWModel(), tea.ClearScreen
+				lpwAddHeader = "Text succsesfully saved!"
+				return NewAddLPWModel(), tea.ClearScreen
 			}
 			m.nextInput()
 		case tea.KeyCtrlC, tea.KeyEsc:
@@ -188,7 +174,7 @@ func (m lpwModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyTab, tea.KeyCtrlN:
 			m.nextInput()
 		case tea.KeyCtrlB:
-			return LPWMenuModel(), tea.ClearScreen
+			return NewLPWMenuModel(), tea.ClearScreen
 
 		}
 
@@ -226,7 +212,7 @@ func (m lpwModel) View() string {
 
  press ctrl+B to go to previous menu
 `,
-		newheader,
+		lpwAddHeader,
 		inputStyle.Width(30).Render("Your login"),
 		m.inputs[lgn].View(),
 		inputStyle.Width(30).Render("Your password"),

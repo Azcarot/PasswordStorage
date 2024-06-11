@@ -113,10 +113,10 @@ func TestDeleteCardReq(t *testing.T) {
 	}{
 		{name: "withErr",
 			args: args{data: storage.BankCardData{CardNumber: "111", Cvc: "222", ExpDate: "22/23", User: "User"}, resp: http.StatusOK},
-			want: false, wantErr: true},
+			want: true, wantErr: false},
 		{name: "Ok",
 			args: args{data: storage.BankCardData{CardNumber: "111", Cvc: "222", ExpDate: "22/23", User: "User"}, resp: http.StatusAccepted},
-			want: true, wantErr: false},
+			want: false, wantErr: true},
 		{name: "Witherr2",
 			args: args{data: storage.BankCardData{CardNumber: "111", Cvc: "222", ExpDate: "22/23", User: "User"}, resp: http.StatusUnprocessableEntity},
 			want: false, wantErr: false},

@@ -2,7 +2,6 @@ package face
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/Azcarot/PasswordStorage/internal/requests"
 	"github.com/Azcarot/PasswordStorage/internal/storage"
@@ -11,17 +10,20 @@ import (
 
 type fileDeleteModel struct {
 	choices  []string
-	files    []storage.FileResponse
+	datas    []storage.FileResponse
 	cursor   int
 	selected map[int]struct{}
 }
 
-// FileDeleteModel - основная функция для построения списка и удалением
+var deleteFileHeader string = "Please select file to delete"
+
+// NewFileDeleteModel - основная функция для построения списка и удалением
 // файла
-func FileDeleteModel() fileDeleteModel {
+func NewFileDeleteModel() fileDeleteModel {
 	ctx := context.WithValue(context.Background(), storage.UserLoginCtxKey, storage.UserLoginPw.Login)
+
 	var choices []string
-	var files []storage.FileResponse
+	var datas []storage.FileResponse
 	data, err := storage.FLiteS.GetAllRecords(ctx)
 	if err != nil {
 		return fileDeleteModel{
@@ -34,12 +36,12 @@ func FileDeleteModel() fileDeleteModel {
 	var b [16]byte
 	copy(b[:], storage.Secret)
 	ctx = context.WithValue(context.Background(), storage.EncryptionCtxKey, b)
-	choices, files = deCypherFile(ctx, data.([]storage.FileResponse))
+	choices, datas = deCypherFile(ctx, data.([]storage.FileResponse))
 
 	return fileDeleteModel{
 
 		choices:  choices,
-		files:    files,
+		datas:    datas,
 		selected: make(map[int]struct{}),
 	}
 }
@@ -49,25 +51,8 @@ func (m fileDeleteModel) Init() tea.Cmd {
 }
 
 func (m fileDeleteModel) View() string {
-	newheader = "Please select file to delete"
-	s := newheader + "\n\n"
 
-	for i, choice := range m.choices {
-
-		cursor := " "
-		if m.cursor == i {
-			cursor = ">"
-		}
-
-		checked := " "
-		if _, ok := m.selected[i]; ok {
-			checked = "x"
-		}
-
-		s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, choice)
-	}
-
-	s += "\nPress q to quit.\n"
+	s := buildView(m, deleteFileHeader)
 
 	return s
 }
@@ -93,7 +78,7 @@ func (m fileDeleteModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case "ctrl+b":
-			return FileMenuModel(), tea.ClearScreen
+			return NewFileMenuModel(), tea.ClearScreen
 
 		case "enter", " ":
 			_, ok := m.selected[m.cursor]
@@ -103,7 +88,7 @@ func (m fileDeleteModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 
 				m.selected[m.cursor] = struct{}{}
-				selectedFile = m.files[m.cursor]
+				selectedFile = m.datas[m.cursor]
 				var fileData storage.FileData
 
 				fileData.FileName = selectedFile.FileName
@@ -112,7 +97,8 @@ func (m fileDeleteModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				fileData.ID = selectedFile.ID
 				err := storage.FLiteS.AddData(fileData)
 				if err != nil {
-					return FileDeleteModel(), nil
+					deleteFileHeader = "Corrupted file data, please try again"
+					return NewFileDeleteModel(), nil
 				}
 
 				pauseTicker <- true
@@ -122,15 +108,15 @@ func (m fileDeleteModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				ok, err := requests.DeleteFileReq(fileData)
 
 				if err != nil {
-					newheader = "Something went wrong, please try again"
-					return FileDeleteModel(), nil
+					deleteFileHeader = "Something went wrong, please try again"
+					return NewFileDeleteModel(), nil
 				}
 				if !ok {
-					newheader = "Wrond file data, try again"
-					return FileDeleteModel(), nil
+					deleteFileHeader = "Wrond file data, try again"
+					return NewFileDeleteModel(), nil
 				}
-				newheader = "File succsesfully deleted!"
-				return FileDeleteModel(), tea.ClearScreen
+				deleteFileHeader = "File succsesfully deleted!"
+				return NewFileDeleteModel(), tea.ClearScreen
 
 			}
 

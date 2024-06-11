@@ -11,15 +11,16 @@ import (
 type fileViewModel struct {
 	choices  []string
 	cursor   int
-	files    []storage.FileResponse
+	datas    []storage.FileResponse
 	selected map[int]struct{}
 }
 
 var selectedFile storage.FileResponse
+var fileViewHeader string = "Main file menu, please chose your file:\n\n"
 
-// FileViewModel - основная функция для построения и просмотра
+// NewFileViewModel - основная функция для построения и просмотра
 // списка сохраненных файлов
-func FileViewModel() fileViewModel {
+func NewFileViewModel() fileViewModel {
 	ctx := context.WithValue(context.Background(), storage.UserLoginCtxKey, storage.UserLoginPw.Login)
 	var choices []string
 	var files []storage.FileResponse
@@ -40,7 +41,7 @@ func FileViewModel() fileViewModel {
 	return fileViewModel{
 
 		choices:  choices,
-		files:    files,
+		datas:    files,
 		selected: make(map[int]struct{}),
 	}
 }
@@ -50,24 +51,8 @@ func (m fileViewModel) Init() tea.Cmd {
 }
 
 func (m fileViewModel) View() string {
-	s := "Main file menu, please chose your file:\n\n"
 
-	for i, choice := range m.choices {
-
-		cursor := " "
-		if m.cursor == i {
-			cursor = ">"
-		}
-
-		checked := " "
-		if _, ok := m.selected[i]; ok {
-			checked = "x"
-		}
-
-		s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, choice)
-	}
-
-	s += "\nPress q to quit.\n"
+	s := buildView(m, fileViewHeader)
 
 	return s
 }
@@ -92,7 +77,7 @@ func (m fileViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.cursor++
 			}
 		case "ctrl+b":
-			return FileMenuModel(), nil
+			return NewFileMenuModel(), nil
 		case "enter", " ":
 			_, ok := m.selected[m.cursor]
 
@@ -101,8 +86,8 @@ func (m fileViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 
 				m.selected[m.cursor] = struct{}{}
-				selectedFile = m.files[m.cursor]
-				return UpdateFileModel(), nil
+				selectedFile = m.datas[m.cursor]
+				return NewUpdateFileModel(), nil
 
 			}
 		}

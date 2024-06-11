@@ -15,11 +15,12 @@ type textUpdateModel struct {
 	err     error
 }
 
-// UpdateTextModel - основная функция для построения и работы с
+var textUpdateHeader string = "Please check text data:"
+
+// NewUpdateTextModel - основная функция для построения и работы с
 // c сохраненными текстовыми данными
-func UpdateTextModel() textUpdateModel {
+func NewUpdateTextModel() textUpdateModel {
 	var inputs []textinput.Model = make([]textinput.Model, 2)
-	newheader = "Please check text data:"
 	inputs[txt] = textinput.New()
 	inputs[txt].Placeholder = "Some text **************"
 	inputs[txt].Focus()
@@ -61,15 +62,15 @@ func (m textUpdateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				ok, err := requests.UpdateTextReq(req)
 
 				if err != nil {
-					newheader = "Something went wrong, please try again"
-					return TextViewModel(), nil
+					textUpdateHeader = "Something went wrong, please try again"
+					return NewTextViewModel(), nil
 				}
 				if !ok {
-					newheader = "Wrond text data, try again"
-					return TextViewModel(), nil
+					textUpdateHeader = "Wrond text data, try again"
+					return NewTextViewModel(), nil
 				}
-				newheader = "Text succsesfully updated!"
-				return TextViewModel(), tea.ClearScreen
+				textUpdateHeader = "Text succsesfully updated!"
+				return NewTextViewModel(), tea.ClearScreen
 			}
 			m.nextInput()
 		case tea.KeyCtrlC, tea.KeyEsc:
@@ -79,7 +80,7 @@ func (m textUpdateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyTab, tea.KeyCtrlN:
 			m.nextInput()
 		case tea.KeyCtrlB:
-			return TextMenuModel(), tea.ClearScreen
+			return NewTextMenuModel(), tea.ClearScreen
 
 		}
 
@@ -115,7 +116,7 @@ func (m textUpdateModel) View() string {
 
  press ctrl+B to go to previous menu
 `,
-		newheader,
+		textUpdateHeader,
 		inputStyle.Width(30).Render("Your Text"),
 		m.inputs[txt].View(),
 		inputStyle.Width(30).Render("Comment"),

@@ -66,6 +66,7 @@ func run(m *testing.M) (code int, err error) {
 		_, _ = DB.Exec(ctx, fmt.Sprintf("DELETE FROM %s", "file_data"))
 		_, _ = DB.Exec(ctx, fmt.Sprintf("DELETE FROM %s", "text_data"))
 		_, _ = DB.Exec(ctx, fmt.Sprintf("DELETE FROM %s", "login_pw"))
+		LiteDB.Close()
 		os.Remove("test.db")
 
 		DB.Close(ctx)

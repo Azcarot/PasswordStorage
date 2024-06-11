@@ -4,9 +4,8 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"net/http"
-	"os"
 
 	"github.com/Azcarot/PasswordStorage/internal/router"
 	"github.com/Azcarot/PasswordStorage/internal/storage"
@@ -15,21 +14,20 @@ import (
 
 func main() {
 	flag := utils.ParseFlagsAndENV()
-	if flag.FlagDBAddr != "" {
-		err := storage.NewConn(flag)
-		if err != nil {
-			panic(err)
-		}
-		storage.PgxConn.CreateTablesForGoKeeper(storage.ST)
-		defer storage.DB.Close(context.Background())
-		r := router.MakeRouter(flag)
-		server := &http.Server{
-			Addr:    flag.FlagAddr,
-			Handler: r,
-		}
-		server.ListenAndServe()
-
-	} else {
-		fmt.Fprintf(os.Stderr, "Missing required flag -d : DataBase address\n")
+	if flag.FlagDBAddr == "" {
+		log.Fatal("Missing required flag -d : DataBase address\n")
 	}
+	err := storage.NewConn(flag)
+	if err != nil {
+		panic(err)
+	}
+	storage.PgxConn.CreateTablesForGoKeeper(storage.ST)
+	defer storage.DB.Close(context.Background())
+	r := router.MakeRouter(flag)
+	server := &http.Server{
+		Addr:    flag.FlagAddr,
+		Handler: r,
+	}
+	server.ListenAndServe()
+
 }

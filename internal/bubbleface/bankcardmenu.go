@@ -19,6 +19,9 @@ const (
 	bcmt
 )
 
+var cardMenuHeader string = "Main bank card menu, please chose your action:\n\n"
+var cardAddHeader string = "Please insert card data:"
+
 type cardMenuModel struct {
 	choices  []string
 	cursor   int
@@ -36,9 +39,9 @@ var bankChoices = bankCardCho{
 	Delete: "Delete card",
 }
 
-// CardMenuModel - основная функция для построения и работы с
+// NewCardMenuModel - основная функция для построения и работы с
 // моделью меню банковских карт
-func CardMenuModel() cardMenuModel {
+func NewCardMenuModel() cardMenuModel {
 	return cardMenuModel{
 
 		choices: []string{bankChoices.Add, bankChoices.View, bankChoices.Delete},
@@ -52,24 +55,8 @@ func (m cardMenuModel) Init() tea.Cmd {
 }
 
 func (m cardMenuModel) View() string {
-	s := "Main bank card menu, please chose your action:\n\n"
 
-	for i, choice := range m.choices {
-
-		cursor := " "
-		if m.cursor == i {
-			cursor = ">"
-		}
-
-		checked := " "
-		if _, ok := m.selected[i]; ok {
-			checked = "x"
-		}
-
-		s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, choice)
-	}
-
-	s += "\nPress q to quit.\n"
+	s := buildView(m, cardMenuHeader)
 
 	return s
 }
@@ -95,7 +82,7 @@ func (m cardMenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case "ctrl+b":
-			return MainMenuModel(), nil
+			return NewMainMenuModel(), nil
 
 		case "enter", " ":
 			_, ok := m.selected[m.cursor]
@@ -106,13 +93,13 @@ func (m cardMenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				m.selected[m.cursor] = struct{}{}
 				if m.choices[m.cursor] == bankChoices.Add {
-					return AddCardModel(), nil
+					return NewAddCardModel(), nil
 				}
 				if m.choices[m.cursor] == bankChoices.View {
-					return CardViewModel(), nil
+					return NewCardViewModel(), nil
 				}
 				if m.choices[m.cursor] == bankChoices.Delete {
-					return CardDeleteModel(), nil
+					return NewCardDeleteModel(), nil
 				}
 			}
 		}
@@ -168,11 +155,10 @@ func cvvValidator(s string) error {
 	return err
 }
 
-// AddCardModel - основная функция для построения и работы с
+// NewAddCardModel - основная функция для построения и работы с
 // меню добавления новой карты
-func AddCardModel() cardModel {
+func NewAddCardModel() cardModel {
 	var inputs []textinput.Model = make([]textinput.Model, 5)
-	newheader = "Please insert card data:"
 	inputs[ccn] = textinput.New()
 	inputs[ccn].Placeholder = "4505 **** **** 1234"
 	inputs[ccn].Focus()
@@ -235,15 +221,15 @@ func (m cardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				ok, err := requests.AddCardReq(req)
 
 				if err != nil {
-					newheader = "Something went wrong, please try again"
-					return AddCardModel(), nil
+					cardAddHeader = "Something went wrong, please try again"
+					return NewAddCardModel(), nil
 				}
 				if !ok {
-					newheader = "Wrond card data, try again"
-					return AddCardModel(), nil
+					cardAddHeader = "Wrond card data, try again"
+					return NewAddCardModel(), nil
 				}
-				newheader = "Card succsesfully saved!"
-				return AddCardModel(), tea.ClearScreen
+				cardAddHeader = "Card succsesfully saved!"
+				return NewAddCardModel(), tea.ClearScreen
 			}
 			m.nextInput()
 		case tea.KeyCtrlC, tea.KeyEsc:
@@ -253,7 +239,7 @@ func (m cardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyTab, tea.KeyCtrlN:
 			m.nextInput()
 		case tea.KeyCtrlB:
-			return CardMenuModel(), tea.ClearScreen
+			return NewCardMenuModel(), tea.ClearScreen
 
 		}
 
@@ -290,7 +276,7 @@ func (m cardModel) View() string {
 
  press ctrl+B to go to previous menu
 `,
-		newheader,
+		cardAddHeader,
 		inputStyle.Width(30).Render("Card Number"),
 		m.inputs[ccn].View(),
 		inputStyle.Width(6).Render("EXP"),

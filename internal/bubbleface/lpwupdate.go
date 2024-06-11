@@ -15,11 +15,12 @@ type lpwUpdateModel struct {
 	err     error
 }
 
-// UpdateLPWModel - основная функция для построения и работы с
+var lpwUpdateHeader string = "Please check login/password data:"
+
+// NewUpdateLPWModel - основная функция для построения и работы с
 // основным меню просмотра/обновления данных типа логин/пароль
-func UpdateLPWModel() lpwUpdateModel {
+func NewUpdateLPWModel() lpwUpdateModel {
 	var inputs []textinput.Model = make([]textinput.Model, 3)
-	newheader = "Please check login/password data:"
 	inputs[lgn] = textinput.New()
 	inputs[lgn].Placeholder = "Login **************"
 	inputs[lgn].Focus()
@@ -69,15 +70,15 @@ func (m lpwUpdateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				ok, err := requests.UpdateLPWReq(req)
 
 				if err != nil {
-					newheader = "Something went wrong, please try again"
-					return LPWViewModel(), nil
+					lpwUpdateHeader = "Something went wrong, please try again"
+					return NewLPWViewModel(), nil
 				}
 				if !ok {
-					newheader = "Wrond text data, try again"
-					return LPWViewModel(), nil
+					lpwUpdateHeader = "Wrond text data, try again"
+					return NewLPWViewModel(), nil
 				}
-				newheader = "Login/password succsesfully updated!"
-				return LPWViewModel(), tea.ClearScreen
+				lpwUpdateHeader = "Login/password succsesfully updated!"
+				return NewLPWViewModel(), tea.ClearScreen
 			}
 			m.nextInput()
 		case tea.KeyCtrlC, tea.KeyEsc:
@@ -87,7 +88,7 @@ func (m lpwUpdateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyTab, tea.KeyCtrlN:
 			m.nextInput()
 		case tea.KeyCtrlB:
-			return LPWMenuModel(), tea.ClearScreen
+			return NewLPWMenuModel(), tea.ClearScreen
 
 		}
 
@@ -125,7 +126,7 @@ func (m lpwUpdateModel) View() string {
 
  press ctrl+B to go to previous menu
 `,
-		newheader,
+		lpwUpdateHeader,
 		inputStyle.Width(30).Render("Your Login"),
 		m.inputs[lgn].View(),
 		inputStyle.Width(30).Render("Your Password"),

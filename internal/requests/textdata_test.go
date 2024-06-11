@@ -104,10 +104,10 @@ func TestDeleteTextReq(t *testing.T) {
 	}{
 		{name: "withErr",
 			args: args{data: storage.TextData{Text: "Text", User: "User"}, resp: http.StatusOK},
-			want: false, wantErr: true},
+			want: true, wantErr: false},
 		{name: "Ok",
 			args: args{data: storage.TextData{Text: "Text", User: "User"}, resp: http.StatusAccepted},
-			want: true, wantErr: false},
+			want: false, wantErr: true},
 		{name: "Witherr2",
 			args: args{data: storage.TextData{Text: "Text", User: "User"}, resp: http.StatusUnprocessableEntity},
 			want: false, wantErr: false},

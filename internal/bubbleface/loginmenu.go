@@ -19,8 +19,8 @@ type loginmodel struct {
 	err     error
 }
 
-// AuthModel - основная функция для работы с меню авторизации
-func AuthModel() loginmodel {
+// NewAuthModel - основная функция для работы с меню авторизации
+func NewAuthModel() loginmodel {
 	var inputs []textinput.Model = make([]textinput.Model, 2)
 	inputs[login] = textinput.New()
 	inputs[login].Placeholder = "Ivan ivanov"
@@ -61,11 +61,11 @@ func (m loginmodel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				ok, err := requests.LoginReq(req)
 				if err != nil {
 					newheader = "Please enter your credentials"
-					return AuthModel(), nil
+					return NewAuthModel(), nil
 				}
 				if !ok {
 					newheader = "Wrong login/pw"
-					return AuthModel(), tea.ClearScreen
+					return NewAuthModel(), tea.ClearScreen
 				}
 				storage.UserLoginPw.Login = req.Login
 				storage.UserLoginPw.Password = req.Password
@@ -91,7 +91,7 @@ func (m loginmodel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						}
 					}
 				}()
-				return MainMenuModel(), nil
+				return NewMainMenuModel(), nil
 			}
 			m.nextInput()
 		case tea.KeyCtrlC, tea.KeyEsc:
@@ -102,7 +102,7 @@ func (m loginmodel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.nextInput()
 
 		case tea.KeyCtrlB:
-			return InitialModel(), tea.ClearScreen
+			return NewInitialModel(), tea.ClearScreen
 
 		}
 

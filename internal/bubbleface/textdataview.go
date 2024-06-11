@@ -11,15 +11,16 @@ import (
 type textViewModel struct {
 	choices  []string
 	cursor   int
-	texts    []storage.TextResponse
+	datas    []storage.TextResponse
 	selected map[int]struct{}
 }
 
 var selectedText storage.TextResponse
+var textViewHeader string = "Main text menu, please chose your action:\n\n"
 
-// TextViewModel - функция для построения и работы со
+// NewTextViewModel - функция для построения и работы со
 // списком сохраненных текстовых данных
-func TextViewModel() textViewModel {
+func NewTextViewModel() textViewModel {
 	ctx := context.WithValue(context.Background(), storage.UserLoginCtxKey, storage.UserLoginPw.Login)
 	var choices []string
 	var texts []storage.TextResponse
@@ -40,7 +41,7 @@ func TextViewModel() textViewModel {
 	return textViewModel{
 
 		choices:  choices,
-		texts:    texts,
+		datas:    texts,
 		selected: make(map[int]struct{}),
 	}
 }
@@ -50,24 +51,8 @@ func (m textViewModel) Init() tea.Cmd {
 }
 
 func (m textViewModel) View() string {
-	s := "Main text menu, please chose your action:\n\n"
 
-	for i, choice := range m.choices {
-
-		cursor := " "
-		if m.cursor == i {
-			cursor = ">"
-		}
-
-		checked := " "
-		if _, ok := m.selected[i]; ok {
-			checked = "x"
-		}
-
-		s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, choice)
-	}
-
-	s += "\nPress q to quit.\n"
+	s := buildView(m, textViewHeader)
 
 	return s
 }
@@ -92,7 +77,7 @@ func (m textViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.cursor++
 			}
 		case "ctrl+b":
-			return TextMenuModel(), nil
+			return NewTextMenuModel(), nil
 		case "enter", " ":
 			_, ok := m.selected[m.cursor]
 
@@ -101,8 +86,8 @@ func (m textViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 
 				m.selected[m.cursor] = struct{}{}
-				selectedText = m.texts[m.cursor]
-				return UpdateTextModel(), nil
+				selectedText = m.datas[m.cursor]
+				return NewUpdateTextModel(), nil
 
 			}
 		}

@@ -14,6 +14,9 @@ const (
 	tcmt
 )
 
+var textMenuHeader string = "Main text menu, please chose your action:\n\n"
+var textAddHeader string = "Please insert text data:"
+
 type textMenuModel struct {
 	choices  []string
 	cursor   int
@@ -31,8 +34,8 @@ var textChoices = textCho{
 	Delete: "Delete text",
 }
 
-// TextMenuModel - основное меню работы с текстовыми данными
-func TextMenuModel() textMenuModel {
+// NewTextMenuModel - основное меню работы с текстовыми данными
+func NewTextMenuModel() textMenuModel {
 	return textMenuModel{
 
 		choices: []string{textChoices.Add, textChoices.View, textChoices.Delete},
@@ -46,24 +49,8 @@ func (m textMenuModel) Init() tea.Cmd {
 }
 
 func (m textMenuModel) View() string {
-	s := "Main text menu, please chose your action:\n\n"
 
-	for i, choice := range m.choices {
-
-		cursor := " "
-		if m.cursor == i {
-			cursor = ">"
-		}
-
-		checked := " "
-		if _, ok := m.selected[i]; ok {
-			checked = "x"
-		}
-
-		s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, choice)
-	}
-
-	s += "\nPress q to quit.\n"
+	s := buildView(m, textMenuHeader)
 
 	return s
 }
@@ -89,7 +76,7 @@ func (m textMenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case "ctrl+b":
-			return MainMenuModel(), nil
+			return NewMainMenuModel(), nil
 
 		case "enter", " ":
 			_, ok := m.selected[m.cursor]
@@ -100,13 +87,13 @@ func (m textMenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				m.selected[m.cursor] = struct{}{}
 				if m.choices[m.cursor] == textChoices.Add {
-					return AddTextModel(), nil
+					return NewAddTextModel(), nil
 				}
 				if m.choices[m.cursor] == textChoices.View {
-					return TextViewModel(), nil
+					return NewTextViewModel(), nil
 				}
 				if m.choices[m.cursor] == textChoices.Delete {
-					return TextDeleteModel(), nil
+					return NewTextDeleteModel(), nil
 				}
 			}
 		}
@@ -121,10 +108,9 @@ type textModel struct {
 	err     error
 }
 
-// AddTextModel - меню для добавления новых текстовых данных
-func AddTextModel() textModel {
+// NewAddTextModel - меню для добавления новых текстовых данных
+func NewAddTextModel() textModel {
 	var inputs []textinput.Model = make([]textinput.Model, 2)
-	newheader = "Please insert text data:"
 	inputs[txt] = textinput.New()
 	inputs[txt].Placeholder = "Some text **************"
 	inputs[txt].Focus()
@@ -163,15 +149,15 @@ func (m textModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				ok, err := requests.AddTextReq(req)
 
 				if err != nil {
-					newheader = "Something went wrong, please try again"
-					return AddTextModel(), nil
+					textAddHeader = "Something went wrong, please try again"
+					return NewAddTextModel(), nil
 				}
 				if !ok {
-					newheader = "Wrond data, please try again"
-					return AddTextModel(), nil
+					textAddHeader = "Wrond data, please try again"
+					return NewAddTextModel(), nil
 				}
-				newheader = "Text succsesfully saved!"
-				return AddTextModel(), tea.ClearScreen
+				textAddHeader = "Text succsesfully saved!"
+				return NewAddTextModel(), tea.ClearScreen
 			}
 			m.nextInput()
 		case tea.KeyCtrlC, tea.KeyEsc:
@@ -181,7 +167,7 @@ func (m textModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyTab, tea.KeyCtrlN:
 			m.nextInput()
 		case tea.KeyCtrlB:
-			return TextMenuModel(), tea.ClearScreen
+			return NewTextMenuModel(), tea.ClearScreen
 
 		}
 
@@ -217,7 +203,7 @@ func (m textModel) View() string {
 
  press ctrl+B to go to previous menu
 `,
-		newheader,
+		textAddHeader,
 		inputStyle.Width(30).Render("Your Text"),
 		m.inputs[txt].View(),
 		inputStyle.Width(30).Render("Comment"),

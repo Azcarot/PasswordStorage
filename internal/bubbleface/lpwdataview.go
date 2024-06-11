@@ -11,15 +11,16 @@ import (
 type lpwViewModel struct {
 	choices  []string
 	cursor   int
-	lpws     []storage.LoginResponse
+	datas    []storage.LoginResponse
 	selected map[int]struct{}
 }
 
 var selectedLPW storage.LoginResponse
+var lpwViewHeader string = "Main login/pw menu, please chose your action:\n\n"
 
-// LPWViewModel - основная функция для построения и просмотра списка
+// NewLPWViewModel - основная функция для построения и просмотра списка
 // сохраненных данных типа логин/пароль
-func LPWViewModel() lpwViewModel {
+func NewLPWViewModel() lpwViewModel {
 	ctx := context.WithValue(context.Background(), storage.UserLoginCtxKey, storage.UserLoginPw.Login)
 	var choices []string
 	var lpws []storage.LoginResponse
@@ -40,7 +41,7 @@ func LPWViewModel() lpwViewModel {
 	return lpwViewModel{
 
 		choices:  choices,
-		lpws:     lpws,
+		datas:    lpws,
 		selected: make(map[int]struct{}),
 	}
 }
@@ -50,24 +51,8 @@ func (m lpwViewModel) Init() tea.Cmd {
 }
 
 func (m lpwViewModel) View() string {
-	s := "Main login/pw menu, please chose your action:\n\n"
 
-	for i, choice := range m.choices {
-
-		cursor := " "
-		if m.cursor == i {
-			cursor = ">"
-		}
-
-		checked := " "
-		if _, ok := m.selected[i]; ok {
-			checked = "x"
-		}
-
-		s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, choice)
-	}
-
-	s += "\nPress q to quit.\n"
+	s := buildView(m, lpwViewHeader)
 
 	return s
 }
@@ -92,7 +77,7 @@ func (m lpwViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.cursor++
 			}
 		case "ctrl+b":
-			return LPWMenuModel(), nil
+			return NewLPWMenuModel(), nil
 		case "enter", " ":
 			_, ok := m.selected[m.cursor]
 
@@ -101,8 +86,8 @@ func (m lpwViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 
 				m.selected[m.cursor] = struct{}{}
-				selectedLPW = m.lpws[m.cursor]
-				return UpdateLPWModel(), nil
+				selectedLPW = m.datas[m.cursor]
+				return NewUpdateLPWModel(), nil
 
 			}
 		}

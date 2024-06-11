@@ -2,7 +2,6 @@ package face
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/Azcarot/PasswordStorage/internal/requests"
 	"github.com/Azcarot/PasswordStorage/internal/storage"
@@ -11,17 +10,19 @@ import (
 
 type textDeleteModel struct {
 	choices  []string
-	texts    []storage.TextResponse
+	datas    []storage.TextResponse
 	cursor   int
 	selected map[int]struct{}
 }
 
-// TextDeleteModel - функция для построения и работы с
+var textDeleteHeader string = "Please select text to delete"
+
+// NewTextDeleteModel - функция для построения и работы с
 // списком сохраненных текстовых данных и их удалением
-func TextDeleteModel() textDeleteModel {
+func NewTextDeleteModel() textDeleteModel {
 	ctx := context.WithValue(context.Background(), storage.UserLoginCtxKey, storage.UserLoginPw.Login)
 	var choices []string
-	var texts []storage.TextResponse
+	var datas []storage.TextResponse
 	data, err := storage.TLiteS.GetAllRecords(ctx)
 	if err != nil {
 		return textDeleteModel{
@@ -34,12 +35,12 @@ func TextDeleteModel() textDeleteModel {
 	var b [16]byte
 	copy(b[:], storage.Secret)
 	ctx = context.WithValue(context.Background(), storage.EncryptionCtxKey, b)
-	choices, texts = deCypherText(ctx, data.([]storage.TextResponse))
+	choices, datas = deCypherText(ctx, data.([]storage.TextResponse))
 
 	return textDeleteModel{
 
 		choices:  choices,
-		texts:    texts,
+		datas:    datas,
 		selected: make(map[int]struct{}),
 	}
 }
@@ -49,25 +50,8 @@ func (m textDeleteModel) Init() tea.Cmd {
 }
 
 func (m textDeleteModel) View() string {
-	newheader = "Please select text to delete"
-	s := newheader + "\n\n"
 
-	for i, choice := range m.choices {
-
-		cursor := " "
-		if m.cursor == i {
-			cursor = ">"
-		}
-
-		checked := " "
-		if _, ok := m.selected[i]; ok {
-			checked = "x"
-		}
-
-		s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, choice)
-	}
-
-	s += "\nPress q to quit.\n"
+	s := buildView(m, textDeleteHeader)
 
 	return s
 }
@@ -93,7 +77,7 @@ func (m textDeleteModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case "ctrl+b":
-			return TextMenuModel(), tea.ClearScreen
+			return NewTextMenuModel(), tea.ClearScreen
 
 		case "enter", " ":
 			_, ok := m.selected[m.cursor]
@@ -103,7 +87,7 @@ func (m textDeleteModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 
 				m.selected[m.cursor] = struct{}{}
-				selectedText = m.texts[m.cursor]
+				selectedText = m.datas[m.cursor]
 				var textData storage.TextData
 
 				textData.Text = selectedText.Text
@@ -111,7 +95,8 @@ func (m textDeleteModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				textData.ID = selectedText.ID
 				err := storage.TLiteS.AddData(textData)
 				if err != nil {
-					return TextDeleteModel(), nil
+					textDeleteHeader = "Corrupted text data, please try again"
+					return NewTextDeleteModel(), nil
 				}
 
 				pauseTicker <- true
@@ -121,15 +106,15 @@ func (m textDeleteModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				ok, err := requests.DeleteTextReq(textData)
 
 				if err != nil {
-					newheader = "Something went wrong, please try again"
-					return TextDeleteModel(), nil
+					textDeleteHeader = "Something went wrong, please try again"
+					return NewTextDeleteModel(), nil
 				}
 				if !ok {
-					newheader = "Wrond text data, try again"
-					return TextDeleteModel(), nil
+					textDeleteHeader = "Wrond text data, try again"
+					return NewTextDeleteModel(), nil
 				}
-				newheader = "Text succsesfully deleted!"
-				return TextDeleteModel(), tea.ClearScreen
+				textDeleteHeader = "Text succsesfully deleted!"
+				return NewTextDeleteModel(), tea.ClearScreen
 
 			}
 

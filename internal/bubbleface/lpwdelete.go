@@ -2,7 +2,6 @@ package face
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/Azcarot/PasswordStorage/internal/requests"
 	"github.com/Azcarot/PasswordStorage/internal/storage"
@@ -11,17 +10,19 @@ import (
 
 type lpwDeleteModel struct {
 	choices  []string
-	lpws     []storage.LoginResponse
+	datas    []storage.LoginResponse
 	cursor   int
 	selected map[int]struct{}
 }
 
-// LPWDeleteModel - основная функция для построения и работы с
+var lpwDeleteHeader string = "Please select text to delete"
+
+// NewLPWDeleteModel - основная функция для построения и работы с
 // меню удаления пары логин/пароль
-func LPWDeleteModel() lpwDeleteModel {
+func NewLPWDeleteModel() lpwDeleteModel {
 	ctx := context.WithValue(context.Background(), storage.UserLoginCtxKey, storage.UserLoginPw.Login)
 	var choices []string
-	var lpws []storage.LoginResponse
+	var datas []storage.LoginResponse
 	data, err := storage.LPWLiteS.GetAllRecords(ctx)
 	if err != nil {
 		return lpwDeleteModel{
@@ -34,12 +35,12 @@ func LPWDeleteModel() lpwDeleteModel {
 	var b [16]byte
 	copy(b[:], storage.Secret)
 	ctx = context.WithValue(context.Background(), storage.EncryptionCtxKey, b)
-	choices, lpws = deCypherLPW(ctx, data.([]storage.LoginResponse))
+	choices, datas = deCypherLPW(ctx, data.([]storage.LoginResponse))
 
 	return lpwDeleteModel{
 
 		choices:  choices,
-		lpws:     lpws,
+		datas:    datas,
 		selected: make(map[int]struct{}),
 	}
 }
@@ -49,25 +50,8 @@ func (m lpwDeleteModel) Init() tea.Cmd {
 }
 
 func (m lpwDeleteModel) View() string {
-	newheader = "Please select text to delete"
-	s := newheader + "\n\n"
-
-	for i, choice := range m.choices {
-
-		cursor := " "
-		if m.cursor == i {
-			cursor = ">"
-		}
-
-		checked := " "
-		if _, ok := m.selected[i]; ok {
-			checked = "x"
-		}
-
-		s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, choice)
-	}
-
-	s += "\nPress q to quit.\n"
+	lpwDeleteHeader = "Please select text to delete"
+	s := buildView(m, lpwDeleteHeader)
 
 	return s
 }
@@ -93,7 +77,7 @@ func (m lpwDeleteModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case "ctrl+b":
-			return TextMenuModel(), tea.ClearScreen
+			return NewLPWMenuModel(), tea.ClearScreen
 
 		case "enter", " ":
 			_, ok := m.selected[m.cursor]
@@ -103,7 +87,7 @@ func (m lpwDeleteModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 
 				m.selected[m.cursor] = struct{}{}
-				selectedLPW = m.lpws[m.cursor]
+				selectedLPW = m.datas[m.cursor]
 				var lpwData storage.LoginData
 
 				lpwData.Login = selectedLPW.Login
@@ -112,7 +96,8 @@ func (m lpwDeleteModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				lpwData.ID = selectedLPW.ID
 				err := storage.LPWLiteS.AddData(lpwData)
 				if err != nil {
-					return LPWDeleteModel(), nil
+					lpwDeleteHeader = "Corrupted login/pw data, please try again"
+					return NewLPWDeleteModel(), nil
 				}
 
 				pauseTicker <- true
@@ -122,15 +107,15 @@ func (m lpwDeleteModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				ok, err := requests.DeleteLPWReq(lpwData)
 
 				if err != nil {
-					newheader = "Something went wrong, please try again"
-					return LPWDeleteModel(), nil
+					lpwDeleteHeader = "Something went wrong, please try again"
+					return NewLPWDeleteModel(), nil
 				}
 				if !ok {
-					newheader = "Wrond login/pw data, try again"
-					return LPWDeleteModel(), nil
+					lpwDeleteHeader = "Wrond login/pw data, try again"
+					return NewLPWDeleteModel(), nil
 				}
-				newheader = "login/pw succsesfully deleted!"
-				return LPWDeleteModel(), tea.ClearScreen
+				lpwDeleteHeader = "login/pw succsesfully deleted!"
+				return NewLPWDeleteModel(), tea.ClearScreen
 
 			}
 

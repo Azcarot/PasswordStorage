@@ -186,7 +186,7 @@ func DeleteFileReq(data storage.FileData) (bool, error) {
 	defer response.Body.Close()
 
 	// Check the response status code
-	if response.StatusCode != http.StatusAccepted && response.StatusCode != http.StatusUnauthorized && response.StatusCode != http.StatusUnprocessableEntity {
+	if response.StatusCode != http.StatusOK && response.StatusCode != http.StatusUnauthorized && response.StatusCode != http.StatusUnprocessableEntity {
 		return false, fmt.Errorf("unexpexteced reponse")
 	}
 

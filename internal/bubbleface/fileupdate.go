@@ -17,11 +17,12 @@ type fileUpdateModel struct {
 	err     error
 }
 
-// UpdateFileModel - основная функция для работы с
+var updateFileHeader string = "Please check file data:"
+
+// NewUpdateFileModel - основная функция для работы с
 // меню обновления и сохранения на диск файла
-func UpdateFileModel() fileUpdateModel {
+func NewUpdateFileModel() fileUpdateModel {
 	var inputs []textinput.Model = make([]textinput.Model, 3)
-	newheader = "Please check file data:"
 	inputs[finm] = textinput.New()
 	inputs[finm].Placeholder = "File name **************"
 	inputs[finm].Focus()
@@ -70,22 +71,22 @@ func (m fileUpdateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				req.ID = selectedFile.ID
 				data, err := checkFileSizeAndRead(req.Path)
 				if err != nil {
-					newheader = "Failed to get file data, please try again"
-					return UpdateFileModel(), nil
+					updateFileHeader = "Failed to get file data, please try again"
+					return NewUpdateFileModel(), nil
 				}
 				req.Data = data
 				ok, err := requests.UpdateFileReq(req)
 
 				if err != nil {
-					newheader = "Something went wrong, please try again"
-					return FileViewModel(), nil
+					updateFileHeader = "Something went wrong, please try again"
+					return NewFileViewModel(), nil
 				}
 				if !ok {
-					newheader = "Wrond file data, try again"
-					return FileViewModel(), nil
+					updateFileHeader = "Wrond file data, try again"
+					return NewFileViewModel(), nil
 				}
-				newheader = "File succsesfully updated!"
-				return FileViewModel(), tea.ClearScreen
+				updateFileHeader = "File succsesfully updated!"
+				return NewFileViewModel(), tea.ClearScreen
 			}
 			m.nextInput()
 		case tea.KeyCtrlC, tea.KeyEsc:
@@ -95,19 +96,19 @@ func (m fileUpdateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyTab, tea.KeyCtrlN:
 			m.nextInput()
 		case tea.KeyCtrlB:
-			return FileMenuModel(), tea.ClearScreen
+			return NewFileMenuModel(), tea.ClearScreen
 
 		case tea.KeyCtrlS:
 			filePath := "/Downloads/"
 
 			err := downloadFileFromDB(selectedFile, filePath)
 			if err != nil {
-				newheader = "Error saving file, try again"
-				return UpdateFileModel(), nil
+				updateFileHeader = "Error saving file, try again"
+				return NewUpdateFileModel(), nil
 			}
 
-			newheader = "File saved!"
-			return FileViewModel(), nil
+			updateFileHeader = "File saved!"
+			return NewFileViewModel(), nil
 		}
 
 		for i := range m.inputs {
@@ -145,7 +146,7 @@ func (m fileUpdateModel) View() string {
  press ctrl+B to go to previous menu
  press ctrl+S to save file to its path
 `,
-		newheader,
+		updateFileHeader,
 		inputStyle.Width(30).Render("File name"),
 		m.inputs[finm].View(),
 		inputStyle.Width(100).Render("File path"),

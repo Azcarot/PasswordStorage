@@ -4,7 +4,7 @@ package main
 
 import (
 	"fmt"
-	"os"
+	"log"
 
 	face "github.com/Azcarot/PasswordStorage/internal/bubbleface"
 	"github.com/Azcarot/PasswordStorage/internal/storage"
@@ -23,7 +23,7 @@ func main() {
 	if flag.FlagDBAddr != "" {
 		err := storage.NewLiteConn(flag)
 		if err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
 
 	}
@@ -31,7 +31,6 @@ func main() {
 	storage.LiteConn.CreateTablesForGoKeeper(storage.LiteST)
 	p := face.MakeTeaProg()
 	if _, err := p.Run(); err != nil {
-		fmt.Printf("Alas, there's been an error: %v", err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 }

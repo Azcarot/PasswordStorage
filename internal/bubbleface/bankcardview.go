@@ -10,7 +10,7 @@ import (
 
 type cardViewModel struct {
 	choices  []string
-	cards    []storage.BankCardResponse
+	datas    []storage.BankCardResponse
 	cursor   int
 	selected map[int]struct{}
 }
@@ -20,13 +20,14 @@ type MsgSendData struct {
 }
 
 var selectedCard storage.BankCardResponse
+var cardViewHeader string = "Main bank card menu, please chose your action:\n\n"
 
-// CardViewModel - основная функция для построения и отбражения
+// NewCardViewModel - основная функция для построения и отбражения
 // списка карт для их просмотра/обновления
-func CardViewModel() cardViewModel {
+func NewCardViewModel() cardViewModel {
 	ctx := context.WithValue(context.Background(), storage.UserLoginCtxKey, storage.UserLoginPw.Login)
 	var choices []string
-	var cards []storage.BankCardResponse
+	var datas []storage.BankCardResponse
 	data, err := storage.BCLiteS.GetAllRecords(ctx)
 	if err != nil {
 		return cardViewModel{
@@ -39,12 +40,12 @@ func CardViewModel() cardViewModel {
 	var b [16]byte
 	copy(b[:], storage.Secret)
 	ctx = context.WithValue(context.Background(), storage.EncryptionCtxKey, b)
-	choices, cards = deCypherBankCard(ctx, data.([]storage.BankCardResponse))
+	choices, datas = deCypherBankCard(ctx, data.([]storage.BankCardResponse))
 
 	return cardViewModel{
 
 		choices:  choices,
-		cards:    cards,
+		datas:    datas,
 		selected: make(map[int]struct{}),
 	}
 }
@@ -54,24 +55,8 @@ func (m cardViewModel) Init() tea.Cmd {
 }
 
 func (m cardViewModel) View() string {
-	s := "Main bank card menu, please chose your action:\n\n"
 
-	for i, choice := range m.choices {
-
-		cursor := " "
-		if m.cursor == i {
-			cursor = ">"
-		}
-
-		checked := " "
-		if _, ok := m.selected[i]; ok {
-			checked = "x"
-		}
-
-		s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, choice)
-	}
-
-	s += "\nPress q to quit.\n"
+	s := buildView(m, cardViewHeader)
 
 	return s
 }
@@ -97,7 +82,7 @@ func (m cardViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case "ctrl+b":
-			return CardMenuModel(), tea.ClearScreen
+			return NewCardMenuModel(), tea.ClearScreen
 
 		case "enter", " ":
 			_, ok := m.selected[m.cursor]
@@ -107,8 +92,8 @@ func (m cardViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 
 				m.selected[m.cursor] = struct{}{}
-				selectedCard = m.cards[m.cursor]
-				return UpdateCardModel(), nil
+				selectedCard = m.datas[m.cursor]
+				return NewUpdateCardModel(), nil
 
 			}
 
