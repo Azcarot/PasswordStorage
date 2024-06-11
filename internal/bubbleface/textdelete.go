@@ -3,7 +3,6 @@ package face
 import (
 	"context"
 
-	"github.com/Azcarot/PasswordStorage/internal/requests"
 	"github.com/Azcarot/PasswordStorage/internal/storage"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -51,75 +50,11 @@ func (m textDeleteModel) Init() tea.Cmd {
 
 func (m textDeleteModel) View() string {
 
-	s := buildView(m, textDeleteHeader)
+	s := buildView(&m, textDeleteHeader)
 
 	return s
 }
 
 func (m textDeleteModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-
-	case tea.KeyMsg:
-
-		switch msg.String() {
-
-		case "ctrl+c", "q":
-			return m, tea.Quit
-
-		case "up", "k":
-			if m.cursor > 0 {
-				m.cursor--
-			}
-
-		case "down", "j":
-			if m.cursor < len(m.choices)-1 {
-				m.cursor++
-			}
-
-		case "ctrl+b":
-			return NewTextMenuModel(), tea.ClearScreen
-
-		case "enter", " ":
-			_, ok := m.selected[m.cursor]
-
-			if ok {
-				delete(m.selected, m.cursor)
-			} else {
-
-				m.selected[m.cursor] = struct{}{}
-				selectedText = m.datas[m.cursor]
-				var textData storage.TextData
-
-				textData.Text = selectedText.Text
-				textData.Comment = selectedText.Comment
-				textData.ID = selectedText.ID
-				err := storage.TLiteS.AddData(textData)
-				if err != nil {
-					textDeleteHeader = "Corrupted text data, please try again"
-					return NewTextDeleteModel(), nil
-				}
-
-				pauseTicker <- true
-
-				defer func() { resumeTicker <- true }()
-
-				ok, err := requests.DeleteTextReq(textData)
-
-				if err != nil {
-					textDeleteHeader = "Something went wrong, please try again"
-					return NewTextDeleteModel(), nil
-				}
-				if !ok {
-					textDeleteHeader = "Wrond text data, try again"
-					return NewTextDeleteModel(), nil
-				}
-				textDeleteHeader = "Text succsesfully deleted!"
-				return NewTextDeleteModel(), tea.ClearScreen
-
-			}
-
-		}
-	}
-
-	return m, nil
+	return buildUpdate(&textDeleteHeader, msg, &m, NewTextMenuModel(), updateTextDeleteModel)
 }

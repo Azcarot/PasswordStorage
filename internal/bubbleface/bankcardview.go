@@ -56,51 +56,15 @@ func (m cardViewModel) Init() tea.Cmd {
 
 func (m cardViewModel) View() string {
 
-	s := buildView(m, cardViewHeader)
+	s := buildView(&m, cardViewHeader)
 
 	return s
 }
 
 func (m cardViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
 
-	case tea.KeyMsg:
+	return buildUpdate(&cardViewHeader, msg, &m, NewCardMenuModel(), updateViewCardModel)
 
-		switch msg.String() {
-
-		case "ctrl+c", "q":
-			return m, tea.Quit
-
-		case "up", "k":
-			if m.cursor > 0 {
-				m.cursor--
-			}
-
-		case "down", "j":
-			if m.cursor < len(m.choices)-1 {
-				m.cursor++
-			}
-
-		case "ctrl+b":
-			return NewCardMenuModel(), tea.ClearScreen
-
-		case "enter", " ":
-			_, ok := m.selected[m.cursor]
-
-			if ok {
-				delete(m.selected, m.cursor)
-			} else {
-
-				m.selected[m.cursor] = struct{}{}
-				selectedCard = m.datas[m.cursor]
-				return NewUpdateCardModel(), nil
-
-			}
-
-		}
-	}
-
-	return m, nil
 }
 
 func deCypherBankCard(ctx context.Context, cards []storage.BankCardResponse) ([]string, []storage.BankCardResponse) {

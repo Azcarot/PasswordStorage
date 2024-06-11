@@ -57,55 +57,13 @@ func (m fileMenuModel) Init() tea.Cmd {
 
 func (m fileMenuModel) View() string {
 
-	s := buildView(m, menuFileHeader)
+	s := buildView(&m, menuFileHeader)
 
 	return s
 }
 
 func (m fileMenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-
-	case tea.KeyMsg:
-
-		switch msg.String() {
-
-		case "ctrl+c", "q":
-			return m, tea.Quit
-
-		case "up", "k":
-			if m.cursor > 0 {
-				m.cursor--
-			}
-
-		case "down", "j":
-			if m.cursor < len(m.choices)-1 {
-				m.cursor++
-			}
-		case "ctrl+b":
-			return NewMainMenuModel(), nil
-
-		case "enter", " ":
-			_, ok := m.selected[m.cursor]
-
-			if ok {
-				delete(m.selected, m.cursor)
-			} else {
-
-				m.selected[m.cursor] = struct{}{}
-				if m.choices[m.cursor] == fileChoices.Add {
-					return NewAddFileModel(), nil
-				}
-				if m.choices[m.cursor] == fileChoices.View {
-					return NewFileViewModel(), nil
-				}
-				if m.choices[m.cursor] == fileChoices.Delete {
-					return NewFileDeleteModel(), nil
-				}
-			}
-		}
-	}
-
-	return m, nil
+	return buildUpdate(&menuFileHeader, msg, &m, NewMainMenuModel(), updateFileMenuModel)
 }
 
 type fileModel struct {

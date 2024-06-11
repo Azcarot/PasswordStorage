@@ -56,56 +56,15 @@ func (m cardMenuModel) Init() tea.Cmd {
 
 func (m cardMenuModel) View() string {
 
-	s := buildView(m, cardMenuHeader)
+	s := buildView(&m, cardMenuHeader)
 
 	return s
 }
 
 func (m cardMenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
 
-	case tea.KeyMsg:
+	return buildUpdate(&cardMenuHeader, msg, &m, NewMainMenuModel(), updateMenuCardModel)
 
-		switch msg.String() {
-
-		case "ctrl+c", "q":
-			return m, tea.Quit
-
-		case "up", "k":
-			if m.cursor > 0 {
-				m.cursor--
-			}
-
-		case "down", "j":
-			if m.cursor < len(m.choices)-1 {
-				m.cursor++
-			}
-
-		case "ctrl+b":
-			return NewMainMenuModel(), nil
-
-		case "enter", " ":
-			_, ok := m.selected[m.cursor]
-
-			if ok {
-				delete(m.selected, m.cursor)
-			} else {
-
-				m.selected[m.cursor] = struct{}{}
-				if m.choices[m.cursor] == bankChoices.Add {
-					return NewAddCardModel(), nil
-				}
-				if m.choices[m.cursor] == bankChoices.View {
-					return NewCardViewModel(), nil
-				}
-				if m.choices[m.cursor] == bankChoices.Delete {
-					return NewCardDeleteModel(), nil
-				}
-			}
-		}
-	}
-
-	return m, nil
 }
 
 type cardModel struct {

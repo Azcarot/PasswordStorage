@@ -54,7 +54,7 @@ func (m cardDeleteModel) Init() tea.Cmd {
 // View - настройка структуры отображения списка/удаления конкретной карты
 func (m cardDeleteModel) View() string {
 
-	s := buildView(m, cardDeleteHeader)
+	s := buildView(&m, cardDeleteHeader)
 
 	return s
 }
@@ -62,6 +62,6 @@ func (m cardDeleteModel) View() string {
 // Update - функция c описанием реакций на разные события (нажатие клавиш, сообщения)
 func (m cardDeleteModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
-	return buildUpdate(&cardDeleteHeader, msg, m, NewCardDeleteModel(), updateDeleteCardModel)
+	return buildUpdate(&cardDeleteHeader, msg, &m, NewCardMenuModel(), updateDeleteCardModel)
 
 }

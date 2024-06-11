@@ -129,7 +129,7 @@ func (m authModel) View() string {
 	// The header
 	newheader := "Authorization\n\n"
 
-	s := buildView(m, newheader)
+	s := buildView(&m, newheader)
 
 	return s
 }
@@ -137,52 +137,11 @@ func (m authModel) View() string {
 func (m mainMenuModel) View() string {
 
 	newheader := "Main menu, please select what type of data you want to interact with:\n\n"
-	s := buildView(m, newheader)
+	s := buildView(&m, newheader)
 
 	return s
 }
 
 func (m mainMenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-
-	case tea.KeyMsg:
-
-		switch msg.String() {
-
-		case "ctrl+c", "q":
-			return m, tea.Quit
-
-		case "up", "k":
-			if m.cursor > 0 {
-				m.cursor--
-			}
-
-		case "down", "j":
-			if m.cursor < len(m.choices)-1 {
-				m.cursor++
-			}
-
-		case "enter", " ":
-			_, ok := m.selected[m.cursor]
-			if ok {
-				delete(m.selected, m.cursor)
-			} else {
-				m.selected[m.cursor] = struct{}{}
-				if m.choices[m.cursor] == mainChoices.Card {
-					return NewCardMenuModel(), nil
-				}
-				if m.choices[m.cursor] == mainChoices.Text {
-					return NewTextMenuModel(), nil
-				}
-				if m.choices[m.cursor] == mainChoices.Login {
-					return NewLPWMenuModel(), nil
-				}
-				if m.choices[m.cursor] == mainChoices.File {
-					return NewFileMenuModel(), nil
-				}
-			}
-		}
-	}
-
-	return m, nil
+	return buildUpdate(&newheader, msg, &m, NewMainMenuModel(), updateMainMenu)
 }

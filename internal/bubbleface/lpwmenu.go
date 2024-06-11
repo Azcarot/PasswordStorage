@@ -52,55 +52,13 @@ func (m lpwMenuModel) Init() tea.Cmd {
 
 func (m lpwMenuModel) View() string {
 
-	s := buildView(m, lpwMenuHeader)
+	s := buildView(&m, lpwMenuHeader)
 
 	return s
 }
 
 func (m lpwMenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-
-	case tea.KeyMsg:
-
-		switch msg.String() {
-
-		case "ctrl+c", "q":
-			return m, tea.Quit
-
-		case "up", "k":
-			if m.cursor > 0 {
-				m.cursor--
-			}
-
-		case "down", "j":
-			if m.cursor < len(m.choices)-1 {
-				m.cursor++
-			}
-		case "ctrl+b":
-			return NewMainMenuModel(), nil
-
-		case "enter", " ":
-			_, ok := m.selected[m.cursor]
-
-			if ok {
-				delete(m.selected, m.cursor)
-			} else {
-
-				m.selected[m.cursor] = struct{}{}
-				if m.choices[m.cursor] == lpwChoices.Add {
-					return NewAddLPWModel(), nil
-				}
-				if m.choices[m.cursor] == lpwChoices.View {
-					return NewLPWViewModel(), nil
-				}
-				if m.choices[m.cursor] == lpwChoices.Delete {
-					return NewLPWDeleteModel(), nil
-				}
-			}
-		}
-	}
-
-	return m, nil
+	return buildUpdate(&lpwMenuHeader, msg, &m, NewMainMenuModel(), updateLPWMenuModel)
 }
 
 type lpwModel struct {

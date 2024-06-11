@@ -3,7 +3,6 @@ package face
 import (
 	"context"
 
-	"github.com/Azcarot/PasswordStorage/internal/requests"
 	"github.com/Azcarot/PasswordStorage/internal/storage"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -51,76 +50,11 @@ func (m lpwDeleteModel) Init() tea.Cmd {
 
 func (m lpwDeleteModel) View() string {
 	lpwDeleteHeader = "Please select text to delete"
-	s := buildView(m, lpwDeleteHeader)
+	s := buildView(&m, lpwDeleteHeader)
 
 	return s
 }
 
 func (m lpwDeleteModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-
-	case tea.KeyMsg:
-
-		switch msg.String() {
-
-		case "ctrl+c", "q":
-			return m, tea.Quit
-
-		case "up", "k":
-			if m.cursor > 0 {
-				m.cursor--
-			}
-
-		case "down", "j":
-			if m.cursor < len(m.choices)-1 {
-				m.cursor++
-			}
-
-		case "ctrl+b":
-			return NewLPWMenuModel(), tea.ClearScreen
-
-		case "enter", " ":
-			_, ok := m.selected[m.cursor]
-
-			if ok {
-				delete(m.selected, m.cursor)
-			} else {
-
-				m.selected[m.cursor] = struct{}{}
-				selectedLPW = m.datas[m.cursor]
-				var lpwData storage.LoginData
-
-				lpwData.Login = selectedLPW.Login
-				lpwData.Password = selectedLPW.Password
-				lpwData.Comment = selectedLPW.Comment
-				lpwData.ID = selectedLPW.ID
-				err := storage.LPWLiteS.AddData(lpwData)
-				if err != nil {
-					lpwDeleteHeader = "Corrupted login/pw data, please try again"
-					return NewLPWDeleteModel(), nil
-				}
-
-				pauseTicker <- true
-
-				defer func() { resumeTicker <- true }()
-
-				ok, err := requests.DeleteLPWReq(lpwData)
-
-				if err != nil {
-					lpwDeleteHeader = "Something went wrong, please try again"
-					return NewLPWDeleteModel(), nil
-				}
-				if !ok {
-					lpwDeleteHeader = "Wrond login/pw data, try again"
-					return NewLPWDeleteModel(), nil
-				}
-				lpwDeleteHeader = "login/pw succsesfully deleted!"
-				return NewLPWDeleteModel(), tea.ClearScreen
-
-			}
-
-		}
-	}
-
-	return m, nil
+	return buildUpdate(&lpwDeleteHeader, msg, &m, NewLPWMenuModel(), updateLPWDeleteModel)
 }
