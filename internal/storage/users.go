@@ -20,40 +20,23 @@ type RegisterRequest struct {
 // CreateNewUser - создание нового пользователя на сервере
 func (store SQLStore) CreateNewUser(ctx context.Context, data UserData) error {
 	encodedPW := utils.ShaData(data.Password, SecretKey)
-	for {
-		select {
-		case <-ctx.Done():
-			return errTimeout
-		default:
-			mut.Lock()
-			defer mut.Unlock()
-			tx, err := store.DB.Begin(ctx)
-			if err != nil {
-				return err
-			}
+	mut.Lock()
+	defer mut.Unlock()
 
-			_, err = store.DB.Exec(ctx, `INSERT into users (login, password, created) 
+	_, err := store.DB.Exec(ctx, `INSERT into users (login, password, created) 
 	values ($1, $2, $3);`,
-				data.Login, encodedPW, data.Date)
+		data.Login, encodedPW, data.Date)
 
-			if err != nil {
-				tx.Rollback(ctx)
-				return err
-			}
-			err = tx.Commit(ctx)
-			if err != nil {
-				tx.Rollback(ctx)
-				return err
-			}
-			return err
-		}
+	if err != nil {
+		return err
 	}
 
+	return nil
 }
 
 // CheckUserExists - проверка, зарегистрирован ли пользователь
-func (store SQLStore) CheckUserExists(data UserData) (bool, error) {
-	ctx := context.Background()
+func (store SQLStore) CheckUserExists(ctx context.Context, data UserData) (bool, error) {
+
 	var login string
 	sqlQuery := fmt.Sprintf(`SELECT login FROM users WHERE login = '%s'`, data.Login)
 	err := store.DB.QueryRow(ctx, sqlQuery).Scan(&login)

@@ -136,7 +136,7 @@ type GetReqData struct {
 type PgxConn interface {
 	CreateTablesForGoKeeper()
 	CreateNewUser(ctx context.Context, data UserData) error
-	CheckUserExists(data UserData) (bool, error)
+	CheckUserExists(ctx context.Context, data UserData) (bool, error)
 	CheckUserPassword(ctx context.Context, data UserData) (bool, error)
 }
 

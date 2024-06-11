@@ -35,7 +35,7 @@ func Registration(res http.ResponseWriter, req *http.Request) {
 	userData.Login = regData.Login
 	userData.Password = regData.Password
 	userData.Date = time.Now().Format(time.RFC3339)
-	result, err := storage.PgxConn.CheckUserExists(storage.ST, userData)
+	result, err := storage.PgxConn.CheckUserExists(storage.ST, req.Context(), userData)
 	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
 		return

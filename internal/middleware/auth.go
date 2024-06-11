@@ -19,7 +19,7 @@ func CheckAuthorization(h http.Handler) http.Handler {
 		}
 		var userData storage.UserData
 		userData.Login = claims["sub"].(string)
-		ok, err := storage.PgxConn.CheckUserExists(storage.ST, userData)
+		ok, err := storage.PgxConn.CheckUserExists(storage.ST, req.Context(), userData)
 		if err != nil {
 			res.WriteHeader(http.StatusInternalServerError)
 			return
