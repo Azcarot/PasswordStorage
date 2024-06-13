@@ -62,33 +62,22 @@ func (store *LPWLiteStorage) GetRecord(ctx context.Context) (any, error) {
 	if !ok {
 		return nil, ErrNoLogin
 	}
-	result := LoginResponse{}
+	result := LoginData{}
 
-	for {
-		select {
-		case <-ctx.Done():
-			return result, errTimeout
-		default:
-			query := `SELECT login, pw, comment
+	query := `SELECT login, pw, comment
 	FROM login_pw
 	WHERE username = $1 AND id = $2`
 
-			rows := store.DB.QueryRowContext(ctx, query, dataLogin, store.Data.ID)
+	rows := store.DB.QueryRowContext(ctx, query, dataLogin, store.Data.ID)
 
-			if err := rows.Scan(&store.Data.Login, &store.Data.Password, &store.Data.Comment); err != nil {
-				return result, err
-			}
-			err := store.DeCypherLPWData(ctx)
-			if err != nil {
-				return result, err
-			}
-			result.Login = store.Data.Login
-			result.Password = store.Data.Password
-			result.Comment = store.Data.Comment
-			return result, nil
-		}
-
+	if err := rows.Scan(&store.Data.Login, &store.Data.Password, &store.Data.Comment); err != nil {
+		return result, err
 	}
+
+	result.Login = store.Data.Login
+	result.Password = store.Data.Password
+	result.Comment = store.Data.Comment
+	return result, nil
 }
 
 // UpdateRecord - обновление данных типа логин/пароль на клиенте по id
@@ -97,10 +86,7 @@ func (store *LPWLiteStorage) UpdateRecord(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	err = store.CypherLPWData(ctx)
-	if err != nil {
-		return err
-	}
+
 	query := `UPDATE login_pw SET
 	login = $1, pw = $2, comment = $3, created = $4
 	WHERE id = $5`
@@ -146,53 +132,42 @@ func (store *LPWLiteStorage) SearchRecord(ctx context.Context) (any, error) {
 	if !ok {
 		return nil, ErrNoLogin
 	}
-	result := []LoginResponse{}
+	result := []LoginData{}
 
-	for {
-		select {
-		case <-ctx.Done():
-			return result, errTimeout
-		default:
-			query := `SELECT login, pw, comment
+	query := `SELECT login, pw, comment
 	FROM login_pw
 	WHERE username = $1 
 	ORDER BY id DESC`
 
-			rows, err := store.DB.QueryContext(ctx, query, dataLogin)
-			if err != nil {
-				return nil, err
-			}
-			defer rows.Close()
-			for rows.Next() {
-				var resp LoginResponse
-				myMap := make(map[string]string)
-				if err := rows.Scan(&store.Data.Login, &store.Data.Password, &store.Data.Comment); err != nil {
-					return result, err
-				}
-				err := store.DeCypherLPWData(ctx)
-				if err != nil {
-					return result, err
-				}
-				myMap["Login"] = store.Data.Login
-				myMap["Password"] = store.Data.Password
-				myMap["Comment"] = store.Data.Comment
-				for _, value := range myMap {
-					if strings.Contains(strings.ToLower(value), strings.ToLower(store.Data.Str)) {
-						resp.Login = myMap["Login"]
-						resp.Password = myMap["Password"]
-						resp.Comment = myMap["Comment"]
-						result = append(result, resp)
-					}
-				}
-
-			}
-			if err = rows.Err(); err != nil {
-				return result, err
-			}
-			return result, nil
-		}
+	rows, err := store.DB.QueryContext(ctx, query, dataLogin)
+	if err != nil {
+		return nil, err
 	}
+	defer rows.Close()
+	for rows.Next() {
+		var resp LoginData
+		myMap := make(map[string]string)
+		if err := rows.Scan(&store.Data.Login, &store.Data.Password, &store.Data.Comment); err != nil {
+			return result, err
+		}
 
+		myMap["Login"] = store.Data.Login
+		myMap["Password"] = store.Data.Password
+		myMap["Comment"] = store.Data.Comment
+		for _, value := range myMap {
+			if strings.Contains(strings.ToLower(value), strings.ToLower(store.Data.Str)) {
+				resp.Login = myMap["Login"]
+				resp.Password = myMap["Password"]
+				resp.Comment = myMap["Comment"]
+				result = append(result, resp)
+			}
+		}
+
+	}
+	if err = rows.Err(); err != nil {
+		return result, err
+	}
+	return result, nil
 }
 
 // GetAllRecords - получение всех данных типа логин/пароль пользователя на клиенте
@@ -202,83 +177,33 @@ func (store *LPWLiteStorage) GetAllRecords(ctx context.Context) (any, error) {
 	if !ok {
 		return nil, ErrNoLogin
 	}
-	result := []LoginResponse{}
+	result := []LoginData{}
 
-	for {
-		select {
-		case <-ctx.Done():
-			return result, errTimeout
-		default:
-			query := `SELECT id, login, pw, comment
+	query := `SELECT id, login, pw, comment
 	FROM login_pw 
 	WHERE username = $1
 	ORDER BY id DESC`
 
-			rows, err := store.DB.QueryContext(ctx, query, dataLogin)
-			if err != nil {
-				return nil, err
-			}
-			defer rows.Close()
-			for rows.Next() {
-				var resp LoginResponse
-				if err := rows.Scan(&store.Data.ID, &store.Data.Login, &store.Data.Password, &store.Data.Comment); err != nil {
-					return result, err
-				}
-				resp.ID = store.Data.ID
-				resp.Login = store.Data.Login
-				resp.Password = store.Data.Password
-				resp.Comment = store.Data.Comment
-				result = append(result, resp)
-			}
-			if err = rows.Err(); err != nil {
-				return result, err
-			}
-			return result, nil
+	rows, err := store.DB.QueryContext(ctx, query, dataLogin)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var resp LoginData
+		if err := rows.Scan(&store.Data.ID, &store.Data.Login, &store.Data.Password, &store.Data.Comment); err != nil {
+			return result, err
 		}
+		resp.ID = store.Data.ID
+		resp.Login = store.Data.Login
+		resp.Password = store.Data.Password
+		resp.Comment = store.Data.Comment
+		result = append(result, resp)
 	}
-
-}
-
-// CypherLPWData - шифрование данных типа логин/пароль пользователя на клиенте
-func (store *LPWLiteStorage) CypherLPWData(ctx context.Context) error {
-	var err error
-	store.Data.Login, err = CypherData(ctx, store.Data.Login)
-	if err != nil {
-		return err
+	if err = rows.Err(); err != nil {
+		return result, err
 	}
-	store.Data.Password, err = CypherData(ctx, store.Data.Password)
-	if err != nil {
-		return err
-	}
-
-	store.Data.Comment, err = CypherData(ctx, store.Data.Comment)
-	if err != nil {
-		return err
-	}
-	store.Data.Str, err = CypherData(ctx, store.Data.Str)
-	if err != nil {
-		return err
-	}
-	return err
-}
-
-// DeCypherLPWData - дешифровка данных типа логин/пароль на клиенте
-func (store *LPWLiteStorage) DeCypherLPWData(ctx context.Context) error {
-	var err error
-	store.Data.Login, err = Dechypher(ctx, store.Data.Login)
-	if err != nil {
-		return err
-	}
-	store.Data.Password, err = Dechypher(ctx, store.Data.Password)
-	if err != nil {
-		return err
-	}
-	store.Data.Comment, err = Dechypher(ctx, store.Data.Comment)
-	if err != nil {
-		return err
-	}
-
-	return err
+	return result, nil
 }
 
 // HashDatabaseData - получение хэша из всех данных типа логин/пароль пользователя на клиенте
@@ -287,7 +212,7 @@ func (store *LPWLiteStorage) HashDatabaseData(ctx context.Context) (string, erro
 	if err != nil {
 		return "", err
 	}
-	jsonData, err := json.Marshal(textData.([]LoginResponse))
+	jsonData, err := json.Marshal(textData.([]LoginData))
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal text data: %v", err)
 	}

@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Azcarot/PasswordStorage/internal/cypher"
 	"github.com/Azcarot/PasswordStorage/internal/storage"
 	"github.com/jackc/pgx/v5"
 )
@@ -41,6 +42,11 @@ func AddNewCard(res http.ResponseWriter, req *http.Request) {
 	mut.Lock()
 	defer mut.Unlock()
 	bankData.Date = time.Now().Format(time.RFC3339)
+	err = cypher.CypherBankData(ctx, &bankData)
+	if err != nil {
+		res.WriteHeader(http.StatusUnprocessableEntity)
+		return
+	}
 	err = storage.BCST.AddData(bankData)
 	if err != nil {
 		res.WriteHeader(http.StatusUnprocessableEntity)
@@ -92,6 +98,11 @@ func GetBankCard(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	bankData := cardData.(storage.BankCardData)
+	err = cypher.DeCypherBankData(ctx, &bankData)
+	if err != nil {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	result, err := json.Marshal(bankData)
 	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
@@ -141,8 +152,13 @@ func UpdateCard(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
-	oldData, ok := old.(storage.BankCardResponse)
+	oldData, ok := old.(storage.BankCardData)
 	if ok {
+		err := cypher.DeCypherBankData(ctx, &oldData)
+		if err != nil {
+			res.WriteHeader(http.StatusUnprocessableEntity)
+			return
+		}
 		if bankData.CardNumber == "" {
 			bankData.CardNumber = oldData.CardNumber
 		}
@@ -151,6 +167,11 @@ func UpdateCard(res http.ResponseWriter, req *http.Request) {
 		}
 		if bankData.ExpDate == "" {
 			bankData.ExpDate = oldData.ExpDate
+		}
+		err = cypher.CypherBankData(ctx, &bankData)
+		if err != nil {
+			res.WriteHeader(http.StatusUnprocessableEntity)
+			return
 		}
 		err = storage.BCST.AddData(bankData)
 		if err != nil {
@@ -243,8 +264,14 @@ func SearchBankCard(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	cypData := cardData.(storage.BankCardData)
+	err = cypher.DeCypherBankData(ctx, &cypData)
+	if err != nil {
+		res.WriteHeader(http.StatusUnprocessableEntity)
+		return
+	}
 
-	result, err := json.Marshal(cardData)
+	result, err := json.Marshal(cypData)
 	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
@@ -273,8 +300,22 @@ func GetAllBankCards(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	decData, ok := cardData.([]storage.BankCardData)
+	if !ok {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
-	result, err := json.Marshal(cardData)
+	for i, card := range decData {
+		err = cypher.DeCypherBankData(ctx, &card)
+		if err != nil {
+			res.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		decData[i] = card
+	}
+
+	result, err := json.Marshal(decData)
 	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
 		return

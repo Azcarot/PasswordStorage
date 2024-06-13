@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Azcarot/PasswordStorage/internal/auth"
+	"github.com/Azcarot/PasswordStorage/internal/cypher"
 	"github.com/Azcarot/PasswordStorage/internal/storage"
 	"github.com/golang-jwt/jwt"
 )
@@ -44,6 +46,9 @@ func Registration(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusConflict)
 		return
 	}
+
+	userData.Password = cypher.ShaData(userData.Password, auth.SecretKey)
+
 	err = storage.PgxConn.CreateNewUser(storage.ST, req.Context(), userData)
 	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)

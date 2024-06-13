@@ -20,7 +20,6 @@ func TestFileLiteSQL_CreateNewRecord(t *testing.T) {
 		name string
 		args args
 	}{
-		{name: "No secret", args: args{data: FileData{ID: 1, FileName: "11", User: "User", Path: "./Path"}, wantErr: false}},
 		{name: "Secret", args: args{data: FileData{ID: 1, FileName: "11", User: "User", Path: "./Path"}, secret: "secret", wantErr: false}},
 	}
 
@@ -28,11 +27,7 @@ func TestFileLiteSQL_CreateNewRecord(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			FLiteS.AddData(tt.args.data)
 			ctx := context.WithValue(context.Background(), UserLoginCtxKey, tt.args.data.User)
-			if len(tt.args.secret) != 0 {
-				var b [16]byte
-				copy(b[:], Secret)
-				ctx = context.WithValue(ctx, EncryptionCtxKey, b)
-			}
+
 			err := FLiteS.CreateNewRecord(ctx)
 			if (err != nil) != tt.args.wantErr {
 				t.Errorf("AddCardReq() error = %v, wantErr %v, test %v", err, tt.args.wantErr, tt.name)
@@ -53,7 +48,6 @@ func TestFileLiteSQL_UpdateRecord(t *testing.T) {
 		name string
 		args args
 	}{
-		{name: "No secret", args: args{data: FileData{ID: 1, FileName: "11", User: "User", Path: "./Path"}, wantErr: true}},
 		{name: "Secret", args: args{data: FileData{ID: 1, FileName: "11", User: "User", Path: "./Path"}, secret: "secret", wantErr: false}},
 	}
 
@@ -61,11 +55,7 @@ func TestFileLiteSQL_UpdateRecord(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			FLiteS.AddData(tt.args.data)
 			ctx := context.WithValue(context.Background(), UserLoginCtxKey, tt.args.data.User)
-			if len(tt.args.secret) != 0 {
-				var b [16]byte
-				copy(b[:], Secret)
-				ctx = context.WithValue(ctx, EncryptionCtxKey, b)
-			}
+
 			err := FLiteS.UpdateRecord(ctx)
 			if (err != nil) != tt.args.wantErr {
 				t.Errorf("UpdateReq() error = %v, wantErr %v, test %v", err, tt.args.wantErr, tt.name)
@@ -93,11 +83,7 @@ func TestFileLiteSQL_DeleteRecord(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			FLiteS.AddData(tt.args.data)
 			ctx := context.WithValue(context.Background(), UserLoginCtxKey, tt.args.data.User)
-			if len(tt.args.secret) != 0 {
-				var b [16]byte
-				copy(b[:], Secret)
-				ctx = context.WithValue(ctx, EncryptionCtxKey, b)
-			}
+
 			err := FLiteS.DeleteRecord(ctx)
 			if (err != nil) != tt.args.wantErr {
 				t.Errorf("DeleteReq() error = %v, wantErr %v, test %v", err, tt.args.wantErr, tt.name)
@@ -119,7 +105,6 @@ func TestFileLiteSQL_GetAllRecords(t *testing.T) {
 		args args
 	}{
 		{name: "No login", args: args{data: FileData{ID: 1, FileName: "11", Path: "./Path"}, wantErr: true}},
-		{name: "No secret", args: args{data: FileData{ID: 1, FileName: "11", User: "User", Path: "./Path"}, wantErr: false}},
 		{name: "Secret", args: args{data: FileData{ID: 1, FileName: "11", User: "User", Path: "./Path"}, secret: "secret", wantErr: false}},
 	}
 
@@ -133,11 +118,6 @@ func TestFileLiteSQL_GetAllRecords(t *testing.T) {
 				ctx = context.Background()
 			}
 
-			if len(tt.args.secret) != 0 {
-				var b [16]byte
-				copy(b[:], Secret)
-				ctx = context.WithValue(ctx, EncryptionCtxKey, b)
-			}
 			_, err := FLiteS.GetAllRecords(ctx)
 			if (err != nil) != tt.args.wantErr {
 				t.Errorf("GetAllRecordsReq() error = %v, wantErr %v, test %v", err, tt.args.wantErr, tt.name)

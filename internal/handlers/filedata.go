@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Azcarot/PasswordStorage/internal/cypher"
 	"github.com/Azcarot/PasswordStorage/internal/storage"
 	"github.com/jackc/pgx/v5"
 )
@@ -40,6 +41,11 @@ func AddNewFile(res http.ResponseWriter, req *http.Request) {
 	mut.Lock()
 	defer mut.Unlock()
 	fileData.Date = time.Now().Format(time.RFC3339)
+	err = cypher.CypherFileData(ctx, &fileData)
+	if err != nil {
+		res.WriteHeader(http.StatusUnprocessableEntity)
+		return
+	}
 	err = storage.FST.AddData(fileData)
 	if err != nil {
 		res.WriteHeader(http.StatusUnprocessableEntity)
@@ -89,8 +95,19 @@ func GetFile(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	cyphFileData, ok := fileData.(storage.FileData)
+	if !ok {
 
-	result, err := json.Marshal(fileData)
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+
+	}
+	err = cypher.DeCypherFileData(ctx, &cyphFileData)
+	if err != nil {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	result, err := json.Marshal(cyphFileData)
 	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
@@ -134,18 +151,37 @@ func UpdateFile(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
+
 	old, err := storage.FST.GetRecord(ctx)
 	if err != nil {
 		res.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
-	oldData, ok := old.(storage.FileResponse)
+	oldData, ok := old.(storage.FileData)
+
+	if !ok {
+
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+
+	}
+	err = cypher.DeCypherFileData(ctx, &oldData)
+	if err != nil {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	if ok {
 		if fileData.FileName == "" {
 			fileData.FileName = oldData.FileName
 		}
 		if fileData.Data == "" {
 			fileData.Data = oldData.Data
+		}
+		err := cypher.CypherFileData(ctx, &fileData)
+		if err != nil {
+			res.WriteHeader(http.StatusUnprocessableEntity)
+			return
 		}
 		err = storage.FST.AddData(fileData)
 		if err != nil {
@@ -238,7 +274,17 @@ func SearchFile(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	result, err := json.Marshal(fileData)
+	cyphData, ok := fileData.(storage.FileData)
+	if !ok {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	err = cypher.DeCypherFileData(ctx, &cyphData)
+	if err != nil {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	result, err := json.Marshal(cyphData)
 	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
@@ -259,6 +305,7 @@ func GetAllFiles(res http.ResponseWriter, req *http.Request) {
 	}
 
 	fileData, err := storage.FST.GetAllRecords(ctx)
+
 	if errors.Is(err, pgx.ErrNoRows) {
 		res.WriteHeader(http.StatusNoContent)
 		return
@@ -267,12 +314,27 @@ func GetAllFiles(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	files, ok := fileData.([]storage.FileData)
+	if !ok {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	for i, file := range files {
+		err := cypher.DeCypherFileData(ctx, &file)
+		if err != nil {
+			res.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		files[i] = file
+	}
 
 	result, err := json.Marshal(fileData)
 	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
 	res.Header().Add("Content-Type", "application/json")
 	res.WriteHeader(http.StatusOK)
 	res.Write(result)

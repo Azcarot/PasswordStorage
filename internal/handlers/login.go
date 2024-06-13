@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Azcarot/PasswordStorage/internal/auth"
+	"github.com/Azcarot/PasswordStorage/internal/cypher"
 	"github.com/Azcarot/PasswordStorage/internal/storage"
 	"github.com/golang-jwt/jwt"
 )
@@ -22,7 +24,7 @@ type LoginResponse struct {
 	AccessToken string `json:"access_token"`
 }
 
-var jwtSecretKey = []byte(storage.SecretKey)
+var jwtSecretKey = []byte(auth.SecretKey)
 
 // LoginUser - ручка авторизации пользователя
 func LoginUser(res http.ResponseWriter, req *http.Request) {
@@ -44,7 +46,7 @@ func LoginUser(res http.ResponseWriter, req *http.Request) {
 			}
 			var userData storage.UserData
 			userData.Login = loginData.Login
-			userData.Password = loginData.Password
+			userData.Password = cypher.ShaData(loginData.Password, auth.SecretKey)
 			result, err := storage.PgxConn.CheckUserPassword(storage.ST, ctx, userData)
 			if err != nil {
 				res.WriteHeader(http.StatusInternalServerError)

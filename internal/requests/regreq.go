@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/Azcarot/PasswordStorage/internal/auth"
+	"github.com/Azcarot/PasswordStorage/internal/cypher"
 	"github.com/Azcarot/PasswordStorage/internal/storage"
 )
 
@@ -18,6 +20,7 @@ func RegistrationReq(data storage.RegisterRequest) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+
 	regURL := storage.ServURL + "/api/user/register"
 	req, err := http.NewRequest("POST", regURL, bytes.NewBuffer(jsonData))
 	if err != nil {
@@ -43,6 +46,7 @@ func RegistrationReq(data storage.RegisterRequest) (bool, error) {
 	}
 	ctx := req.Context()
 	storage.AuthToken = response.Header.Get("Authorization")
+	data.Password = cypher.ShaData(data.Password, auth.SecretKey)
 	err = storage.LiteST.CreateNewUser(ctx, data)
 	if err != nil {
 		return false, fmt.Errorf("sqlite user fail")

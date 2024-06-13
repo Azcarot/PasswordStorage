@@ -3,11 +3,7 @@ package storage
 import (
 	"context"
 	"errors"
-	"fmt"
-	"log"
 
-	"github.com/Azcarot/PasswordStorage/internal/utils"
-	"github.com/golang-jwt/jwt"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -19,13 +15,13 @@ type RegisterRequest struct {
 
 // CreateNewUser - создание нового пользователя на сервере
 func (store SQLStore) CreateNewUser(ctx context.Context, data UserData) error {
-	encodedPW := utils.ShaData(data.Password, SecretKey)
+
 	mut.Lock()
 	defer mut.Unlock()
 
 	_, err := store.DB.Exec(ctx, `INSERT into users (login, password, created) 
 	values ($1, $2, $3);`,
-		data.Login, encodedPW, data.Date)
+		data.Login, data.Password, data.Date)
 
 	if err != nil {
 		return err
@@ -38,8 +34,8 @@ func (store SQLStore) CreateNewUser(ctx context.Context, data UserData) error {
 func (store SQLStore) CheckUserExists(ctx context.Context, data UserData) (bool, error) {
 
 	var login string
-	sqlQuery := fmt.Sprintf(`SELECT login FROM users WHERE login = '%s'`, data.Login)
-	err := store.DB.QueryRow(ctx, sqlQuery).Scan(&login)
+	sqlQuery := `SELECT login FROM users WHERE login = $1`
+	err := store.DB.QueryRow(ctx, sqlQuery, data.Login).Scan(&login)
 
 	if errors.Is(err, pgx.ErrNoRows) {
 
@@ -56,37 +52,16 @@ func (store SQLStore) CheckUserExists(ctx context.Context, data UserData) (bool,
 
 // CheckUserPassword - проверка пароля пользователя
 func (store SQLStore) CheckUserPassword(ctx context.Context, data UserData) (bool, error) {
-	encodedPw := utils.ShaData(data.Password, SecretKey)
-	sqlQuery := fmt.Sprintf(`SELECT login, password FROM users WHERE login = '%s'`, data.Login)
+
+	sqlQuery := `SELECT login, password FROM users WHERE login = $1`
 	var login, pw string
-	err := store.DB.QueryRow(ctx, sqlQuery).Scan(&login, &pw)
+	err := store.DB.QueryRow(ctx, sqlQuery, data.Login).Scan(&login, &pw)
 	if err != nil {
 		return false, err
 	}
 
-	if encodedPw != pw {
+	if data.Password != pw {
 		return false, nil
 	}
 	return true, nil
-}
-
-// VerifyToken - проверка токена авторизации
-func VerifyToken(token string) (jwt.MapClaims, bool) {
-	hmacSecretString := SecretKey
-	hmacSecret := []byte(hmacSecretString)
-	gettoken, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
-		return hmacSecret, nil
-	})
-
-	if err != nil {
-		return nil, false
-	}
-
-	if claims, ok := gettoken.Claims.(jwt.MapClaims); ok && gettoken.Valid {
-		return claims, true
-
-	}
-	log.Printf("Invalid JWT Token")
-	return nil, false
-
 }

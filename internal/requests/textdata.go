@@ -8,22 +8,21 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/Azcarot/PasswordStorage/internal/cypher"
 	"github.com/Azcarot/PasswordStorage/internal/storage"
 )
 
 // AddTextReq - запрос на создание новой текстовой записи на сервере
 func AddTextReq(data storage.TextData) (bool, error) {
-	var b [16]byte
-	copy(b[:], storage.Secret)
-	ctx := context.WithValue(context.Background(), storage.EncryptionCtxKey, b)
+	ctx := context.Background()
 	var cyphData storage.TextData
 	var err error
-	cyphData.Text, err = storage.CypherData(ctx, data.Text)
+	cyphData.Text, err = cypher.CypherData(ctx, data.Text)
 
 	if err != nil {
 		return false, err
 	}
-	cyphData.Comment, err = storage.CypherData(ctx, data.Comment)
+	cyphData.Comment, err = cypher.CypherData(ctx, data.Comment)
 	if err != nil {
 		return false, err
 	}
@@ -60,18 +59,16 @@ func AddTextReq(data storage.TextData) (bool, error) {
 
 // DeleteTextReq - запрос на удаление записи на сервере
 func DeleteTextReq(data storage.TextData) (bool, error) {
-	var b [16]byte
-	copy(b[:], storage.Secret)
-	ctx := context.WithValue(context.Background(), storage.EncryptionCtxKey, b)
+	ctx := context.Background()
 	var cyphData storage.TextData
 	var err error
-	cyphData.Text, err = storage.CypherData(ctx, data.Text)
+	cyphData.Text, err = cypher.CypherData(ctx, data.Text)
 
 	if err != nil {
 		return false, err
 	}
 
-	cyphData.Comment, err = storage.CypherData(ctx, data.Comment)
+	cyphData.Comment, err = cypher.CypherData(ctx, data.Comment)
 	if err != nil {
 		return false, err
 	}
@@ -111,18 +108,16 @@ func DeleteTextReq(data storage.TextData) (bool, error) {
 
 // UpdateTextReq - запрос на обновление текстовой записи на сервере
 func UpdateTextReq(data storage.TextData) (bool, error) {
-	var b [16]byte
-	copy(b[:], storage.Secret)
-	ctx := context.WithValue(context.Background(), storage.EncryptionCtxKey, b)
+	ctx := context.Background()
 	var cyphData storage.TextData
 	var err error
-	cyphData.Text, err = storage.CypherData(ctx, data.Text)
+	cyphData.Text, err = cypher.CypherData(ctx, data.Text)
 
 	if err != nil {
 		return false, err
 	}
 
-	cyphData.Comment, err = storage.CypherData(ctx, data.Comment)
+	cyphData.Comment, err = cypher.CypherData(ctx, data.Comment)
 	if err != nil {
 		return false, err
 	}
@@ -218,7 +213,7 @@ func SyncTextReq() (bool, error) {
 			return false, err
 		}
 		var newTextData []storage.TextData
-		for _, text := range newData.([]storage.TextResponse) {
+		for _, text := range newData.([]storage.TextData) {
 			var data storage.TextData
 			data.ID = text.ID
 			newTextData = append(newTextData, data)
@@ -247,7 +242,7 @@ func textSliceToMap(slice []storage.TextData) (map[int]storage.TextData, map[int
 	return m, c
 }
 
-// Получаем слайс структур банковских карт, которые есть только на клиенте
+// Получаем слайс структур текст данных, которые есть только на клиенте
 func compareUnorderedTextSlices(s, c []storage.TextData) []storage.TextData {
 	if len(s) == len(c) {
 		return nil

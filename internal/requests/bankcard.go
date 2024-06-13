@@ -11,40 +11,20 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/Azcarot/PasswordStorage/internal/cypher"
 	"github.com/Azcarot/PasswordStorage/internal/storage"
 )
 
 // AddCardReq - запрос на создание банковской карты на сервере
 func AddCardReq(data storage.BankCardData) (bool, error) {
-	var b [16]byte
-	copy(b[:], storage.Secret)
-	ctx := context.WithValue(context.Background(), storage.EncryptionCtxKey, b)
-	var cyphData storage.BankCardData
-	var err error
-	cyphData.CardNumber, err = storage.CypherData(ctx, data.CardNumber)
-	if err != nil {
-		return false, err
-	}
-	cyphData.ExpDate, err = storage.CypherData(ctx, data.ExpDate)
+	ctx := context.Background()
 
-	if err != nil {
-		return false, err
-	}
-	cyphData.Cvc, err = storage.CypherData(ctx, data.Cvc)
-
-	if err != nil {
-		return false, err
-	}
-	cyphData.Comment, err = storage.CypherData(ctx, data.Comment)
-	if err != nil {
-		return false, err
-	}
-	cyphData.FullName, err = storage.CypherData(ctx, data.FullName)
+	err := cypher.CypherBankData(ctx, &data)
 	if err != nil {
 		return false, err
 	}
 
-	jsonData, err := json.Marshal(cyphData)
+	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return false, err
 	}
@@ -77,38 +57,14 @@ func AddCardReq(data storage.BankCardData) (bool, error) {
 
 // UpdateCardReq - запрос на обновление банковской карты на сервере
 func UpdateCardReq(data storage.BankCardData) (bool, error) {
-	var b [16]byte
-	copy(b[:], storage.Secret)
-	ctx := context.WithValue(context.Background(), storage.EncryptionCtxKey, b)
-	var cyphData storage.BankCardData
-	var err error
-	cyphData.CardNumber, err = storage.CypherData(ctx, data.CardNumber)
+	ctx := context.Background()
+	err := cypher.CypherBankData(ctx, &data)
 
 	if err != nil {
 		return false, err
 	}
-	cyphData.ExpDate, err = storage.CypherData(ctx, data.ExpDate)
 
-	if err != nil {
-		return false, err
-	}
-	cyphData.Cvc, err = storage.CypherData(ctx, data.Cvc)
-
-	if err != nil {
-		return false, err
-	}
-	cyphData.Comment, err = storage.CypherData(ctx, data.Comment)
-	if err != nil {
-		return false, err
-	}
-	cyphData.FullName, err = storage.CypherData(ctx, data.FullName)
-	if err != nil {
-		return false, err
-	}
-
-	cyphData.ID = data.ID
-
-	jsonData, err := json.Marshal(cyphData)
+	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return false, err
 	}
@@ -141,38 +97,15 @@ func UpdateCardReq(data storage.BankCardData) (bool, error) {
 
 // DeleteCardReq - запрос на удаление банковской карты на сервере
 func DeleteCardReq(data storage.BankCardData) (bool, error) {
-	var b [16]byte
-	copy(b[:], storage.Secret)
-	ctx := context.WithValue(context.Background(), storage.EncryptionCtxKey, b)
-	var cyphData storage.BankCardData
-	var err error
-	cyphData.CardNumber, err = storage.CypherData(ctx, data.CardNumber)
+	ctx := context.Background()
+
+	err := cypher.CypherBankData(ctx, &data)
 
 	if err != nil {
 		return false, err
 	}
-	cyphData.ExpDate, err = storage.CypherData(ctx, data.ExpDate)
 
-	if err != nil {
-		return false, err
-	}
-	cyphData.Cvc, err = storage.CypherData(ctx, data.Cvc)
-
-	if err != nil {
-		return false, err
-	}
-	cyphData.Comment, err = storage.CypherData(ctx, data.Comment)
-	if err != nil {
-		return false, err
-	}
-	cyphData.FullName, err = storage.CypherData(ctx, data.FullName)
-	if err != nil {
-		return false, err
-	}
-
-	cyphData.ID = data.ID
-
-	jsonData, err := json.Marshal(cyphData)
+	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return false, err
 	}
@@ -263,10 +196,10 @@ func SyncCardReq() (bool, error) {
 			return false, err
 		}
 		var newBankData []storage.BankCardData
-		if _, ok := newData.([]storage.BankCardResponse); !ok {
+		if _, ok := newData.([]storage.BankCardData); !ok {
 			return false, nil
 		}
-		for _, card := range newData.([]storage.BankCardResponse) {
+		for _, card := range newData.([]storage.BankCardData) {
 			var data storage.BankCardData
 			data.ID = card.ID
 			newBankData = append(newBankData, data)

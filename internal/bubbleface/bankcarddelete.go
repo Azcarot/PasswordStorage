@@ -10,7 +10,7 @@ import (
 
 type cardDeleteModel struct {
 	choices  []string
-	datas    []storage.BankCardResponse
+	datas    []storage.BankCardData
 	cursor   int
 	selected map[int]struct{}
 }
@@ -22,7 +22,7 @@ var cardDeleteHeader string = "Please select card to delete"
 func NewCardDeleteModel() cardDeleteModel {
 	ctx := context.WithValue(context.Background(), storage.UserLoginCtxKey, storage.UserLoginPw.Login)
 	var choices []string
-	var datas []storage.BankCardResponse
+	var datas []storage.BankCardData
 	data, err := storage.BCLiteS.GetAllRecords(ctx)
 	if err != nil {
 		return cardDeleteModel{
@@ -33,10 +33,16 @@ func NewCardDeleteModel() cardDeleteModel {
 		}
 	}
 
-	var b [16]byte
-	copy(b[:], storage.Secret)
-	ctx = context.WithValue(context.Background(), storage.EncryptionCtxKey, b)
-	choices, datas = deCypherBankCard(ctx, data.([]storage.BankCardResponse))
+	choices, datas, err = deCypherBankCard(ctx, data.([]storage.BankCardData))
+	if err != nil {
+		cardDeleteHeader = "An error occured, please try again"
+		return cardDeleteModel{
+
+			choices: []string{},
+
+			selected: make(map[int]struct{}),
+		}
+	}
 
 	return cardDeleteModel{
 

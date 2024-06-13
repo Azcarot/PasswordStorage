@@ -9,7 +9,7 @@ import (
 
 type fileDeleteModel struct {
 	choices  []string
-	datas    []storage.FileResponse
+	datas    []storage.FileData
 	cursor   int
 	selected map[int]struct{}
 }
@@ -22,7 +22,7 @@ func NewFileDeleteModel() fileDeleteModel {
 	ctx := context.WithValue(context.Background(), storage.UserLoginCtxKey, storage.UserLoginPw.Login)
 
 	var choices []string
-	var datas []storage.FileResponse
+	var datas []storage.FileData
 	data, err := storage.FLiteS.GetAllRecords(ctx)
 	if err != nil {
 		return fileDeleteModel{
@@ -32,10 +32,16 @@ func NewFileDeleteModel() fileDeleteModel {
 			selected: make(map[int]struct{}),
 		}
 	}
-	var b [16]byte
-	copy(b[:], storage.Secret)
-	ctx = context.WithValue(context.Background(), storage.EncryptionCtxKey, b)
-	choices, datas = deCypherFile(ctx, data.([]storage.FileResponse))
+
+	choices, datas, err = deCypherFile(ctx, data.([]storage.FileData))
+	if err != nil {
+		return fileDeleteModel{
+
+			choices: []string{},
+
+			selected: make(map[int]struct{}),
+		}
+	}
 
 	return fileDeleteModel{
 

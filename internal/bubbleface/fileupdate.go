@@ -2,8 +2,6 @@ package face
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/Azcarot/PasswordStorage/internal/requests"
 	"github.com/Azcarot/PasswordStorage/internal/storage"
@@ -167,32 +165,4 @@ func (m *fileUpdateModel) prevInput() {
 	if m.focused < 0 {
 		m.focused = len(m.inputs) - 1
 	}
-}
-
-func downloadFileFromDB(fdata storage.FileResponse, filePath string) error {
-	absPath, err := filepath.Abs(filePath)
-
-	if err != nil {
-		return fmt.Errorf("failed to get absolute path: %w", err)
-	}
-	_, err = os.Stat(absPath)
-	if os.IsNotExist(err) {
-		if err = os.MkdirAll(filepath.Dir(absPath), 0777); err != nil {
-			return err
-		}
-	}
-	file, err := os.Create(fdata.FileName)
-	if err != nil {
-		return err
-	}
-	// Ensure the file is closed when the function exits
-	defer file.Close()
-
-	// Write data to the file
-	_, err = file.WriteString(fdata.Data)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }

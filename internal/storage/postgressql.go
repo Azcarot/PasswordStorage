@@ -2,31 +2,17 @@ package storage
 
 import (
 	"context"
-	"crypto/aes"
-	"crypto/cipher"
-	"crypto/rand"
-	"encoding/base64"
 	"errors"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"sync"
 	"time"
 
-	"github.com/Azcarot/PasswordStorage/internal/utils"
-	"github.com/golang-jwt/jwt"
+	"github.com/Azcarot/PasswordStorage/internal/cfg"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
-
-// SecretKey - ключ для шифрования пользователя
-const SecretKey string = "super-secret"
-
-// MyCustomClaims - тип для хранения токена авторизации
-type MyCustomClaims struct {
-	jwt.MapClaims
-}
 
 type CtxKey string
 
@@ -57,14 +43,6 @@ type LoginData struct {
 	Str      string
 }
 
-// LoginResponse - формат ответа на запросы для данных типа логин/пароль
-type LoginResponse struct {
-	ID       int    `json:"id"`
-	Login    string `json:"login"`
-	Password string `json:"pwd"`
-	Comment  string `json:"comment"`
-}
-
 // TextData - тип данных пользователя формата текстовые данные
 type TextData struct {
 	ID      int    `json:"id"`
@@ -73,13 +51,6 @@ type TextData struct {
 	User    string
 	Date    string
 	Str     string
-}
-
-// LoginResponse - формат ответа на запросы для данных типа логин/пароль
-type TextResponse struct {
-	ID      int    `json:"id"`
-	Text    string `json:"text"`
-	Comment string `json:"comment"`
 }
 
 // FileData - тип данных пользователя формата "файл"
@@ -94,15 +65,6 @@ type FileData struct {
 	Str      string
 }
 
-// FileResponse - формат ответа на запросы для данных типа file
-type FileResponse struct {
-	ID       int    `json:"id"`
-	FileName string `json:"name"`
-	Path     string `json:"path"`
-	Data     string `json:"data"`
-	Comment  string `json:"comment"`
-}
-
 // CardData - тип данных пользователя формата банковских карт
 type BankCardData struct {
 	ID         int    `json:"id"`
@@ -114,16 +76,6 @@ type BankCardData struct {
 	User       string
 	Date       string
 	Str        string
-}
-
-// BankCardResponse - формат ответа на запросы для данных типа банковских карт
-type BankCardResponse struct {
-	ID         int    `json:"id"`
-	CardNumber string `json:"number"`
-	Cvc        string `json:"cvc"`
-	ExpDate    string `json:"exp"`
-	FullName   string `json:"fullname"`
-	Comment    string `json:"comment"`
 }
 
 // GetReqData - формат данных для запросов Get и Search
@@ -225,8 +177,6 @@ var TST PgxStorage
 // FST - интерфейс работы с файловыми данными в pgx
 var FST PgxStorage
 
-var errTimeout = fmt.Errorf("timeout exceeded")
-
 // ErrNoLogin - ошибка при отсутствии логина пользователя в контексте
 var ErrNoLogin = fmt.Errorf("no login in context")
 
@@ -286,7 +236,7 @@ func MakeConn(db *pgx.Conn) PgxConn {
 }
 
 // NewConn - подключение к БД, с последющим созданием и реализацией всех хранилищ для сервера
-func NewConn(f utils.Flags) error {
+func NewConn(f cfg.Flags) error {
 	var err error
 	var attempts pgxConnTime
 	attempts.attempts = 3
@@ -312,7 +262,7 @@ func NewConn(f utils.Flags) error {
 	return nil
 }
 
-func connectToDB(f utils.Flags) error {
+func connectToDB(f cfg.Flags) error {
 	var err error
 	ps := fmt.Sprintf(f.FlagDBAddr)
 	DB, err = pgx.Connect(context.Background(), ps)
@@ -571,59 +521,4 @@ func (store SQLStore) CreateTablesForGoKeeper() {
 
 	}
 
-}
-
-// CypherData - шифрование данных секретом из контекста
-func CypherData(ctx context.Context, data string) (string, error) {
-	keyData, ok := ctx.Value(EncryptionCtxKey).([16]byte)
-	if !ok {
-		return "", ErrNoKey
-	}
-	key := keyData[:]
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return "", err
-	}
-
-	ciphertext := make([]byte, aes.BlockSize+len(data))
-	iv := ciphertext[:aes.BlockSize]
-
-	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
-		return "", err
-	}
-
-	stream := cipher.NewCFBEncrypter(block, iv)
-	stream.XORKeyStream(ciphertext[aes.BlockSize:], []byte(data))
-
-	return base64.URLEncoding.EncodeToString(ciphertext), nil
-}
-
-// Dechyper - дешифровка данных секретом из контекста
-func Dechypher(ctx context.Context, data string) (string, error) {
-	keyData, ok := ctx.Value(EncryptionCtxKey).([16]byte)
-	if !ok {
-		return "", ErrNoKey
-	}
-	key := keyData[:]
-	ciphertextBytes, err := base64.URLEncoding.DecodeString(data)
-	if err != nil {
-		return "", err
-	}
-
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return "", err
-	}
-
-	if len(ciphertextBytes) < aes.BlockSize {
-		return "", fmt.Errorf("ciphertext слишком короткий")
-	}
-
-	iv := ciphertextBytes[:aes.BlockSize]
-	ciphertextBytes = ciphertextBytes[aes.BlockSize:]
-
-	stream := cipher.NewCFBDecrypter(block, iv)
-	stream.XORKeyStream(ciphertextBytes, ciphertextBytes)
-
-	return string(ciphertextBytes), nil
 }

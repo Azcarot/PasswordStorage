@@ -7,13 +7,13 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/Azcarot/PasswordStorage/internal/cfg"
 	"github.com/Azcarot/PasswordStorage/internal/router"
 	"github.com/Azcarot/PasswordStorage/internal/storage"
-	"github.com/Azcarot/PasswordStorage/internal/utils"
 )
 
 func main() {
-	flag := utils.ParseFlagsAndENV()
+	flag := cfg.ParseFlagsAndENV()
 	if flag.FlagDBAddr == "" {
 		log.Fatal("Missing required flag -d : DataBase address\n")
 	}

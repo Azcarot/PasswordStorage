@@ -20,7 +20,6 @@ func TestLPWSQL_CreateNewRecord(t *testing.T) {
 		name string
 		args args
 	}{
-		{name: "No secret", args: args{data: LoginData{ID: 1, Login: "11", User: "User", Password: "./Password"}, wantErr: true}},
 		{name: "Secret", args: args{data: LoginData{ID: 1, Login: "11", User: "User", Password: "./Password"}, secret: "secret", wantErr: false}},
 	}
 
@@ -28,11 +27,6 @@ func TestLPWSQL_CreateNewRecord(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			LPST.AddData(tt.args.data)
 			ctx := context.WithValue(context.Background(), UserLoginCtxKey, tt.args.data.User)
-			if len(tt.args.secret) != 0 {
-				var b [16]byte
-				copy(b[:], Secret)
-				ctx = context.WithValue(ctx, EncryptionCtxKey, b)
-			}
 			err := LPST.CreateNewRecord(ctx)
 			if (err != nil) != tt.args.wantErr {
 				t.Errorf("AddLPWReq() error = %v, wantErr %v, test %v", err, tt.args.wantErr, tt.name)
@@ -53,7 +47,6 @@ func TestLPWSQL_UpdateRecord(t *testing.T) {
 		name string
 		args args
 	}{
-		{name: "No secret", args: args{data: LoginData{ID: 1, Login: "11", User: "User", Password: "./Password"}, wantErr: true}},
 		{name: "Secret", args: args{data: LoginData{ID: 1, Login: "11", User: "User", Password: "./Password"}, secret: "secret", wantErr: false}},
 	}
 
@@ -61,11 +54,7 @@ func TestLPWSQL_UpdateRecord(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			LPST.AddData(tt.args.data)
 			ctx := context.WithValue(context.Background(), UserLoginCtxKey, tt.args.data.User)
-			if len(tt.args.secret) != 0 {
-				var b [16]byte
-				copy(b[:], Secret)
-				ctx = context.WithValue(ctx, EncryptionCtxKey, b)
-			}
+
 			err := LPST.UpdateRecord(ctx)
 			if (err != nil) != tt.args.wantErr {
 				t.Errorf("UpdateReq() error = %v, wantErr %v, test %v", err, tt.args.wantErr, tt.name)
@@ -93,11 +82,7 @@ func TestLPWSQL_DeleteRecord(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			LPST.AddData(tt.args.data)
 			ctx := context.WithValue(context.Background(), UserLoginCtxKey, tt.args.data.User)
-			if len(tt.args.secret) != 0 {
-				var b [16]byte
-				copy(b[:], Secret)
-				ctx = context.WithValue(ctx, EncryptionCtxKey, b)
-			}
+
 			err := LPST.DeleteRecord(ctx)
 			if (err != nil) != tt.args.wantErr {
 				t.Errorf("DeleteReq() error = %v, wantErr %v, test %v", err, tt.args.wantErr, tt.name)
@@ -119,7 +104,6 @@ func TestLPWSQL_GetAllRecords(t *testing.T) {
 		args args
 	}{
 		{name: "No login", args: args{data: LoginData{ID: 1, Login: "11", Password: "./Password"}, wantErr: true}},
-		{name: "No secret", args: args{data: LoginData{ID: 1, Login: "11", User: "User", Password: "./Password"}, wantErr: false}},
 		{name: "Secret", args: args{data: LoginData{ID: 1, Login: "11", User: "User", Password: "./Password"}, secret: "secret", wantErr: false}},
 	}
 
@@ -133,11 +117,6 @@ func TestLPWSQL_GetAllRecords(t *testing.T) {
 				ctx = context.Background()
 			}
 
-			if len(tt.args.secret) != 0 {
-				var b [16]byte
-				copy(b[:], Secret)
-				ctx = context.WithValue(ctx, EncryptionCtxKey, b)
-			}
 			_, err := LPST.GetAllRecords(ctx)
 			if (err != nil) != tt.args.wantErr {
 				t.Errorf("GetAllRecordsReq() error = %v, wantErr %v, test %v", err, tt.args.wantErr, tt.name)

@@ -10,7 +10,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/Azcarot/PasswordStorage/internal/utils"
+	"github.com/Azcarot/PasswordStorage/internal/cfg"
+
 	_ "modernc.org/sqlite"
 )
 
@@ -59,7 +60,7 @@ var ServURL string
 var AuthToken string
 
 // Secret - секрет на клиенте
-var Secret string
+var Secret [16]byte
 
 // SyncClientHashes - хэши данных пользователя для запросов на синхру с сервером
 var SyncClientHashes SyncReq
@@ -72,7 +73,7 @@ func MakeLiteConn(db *sql.DB) LiteConn {
 }
 
 // NewLiteConn - подключение к SQLlite
-func NewLiteConn(f utils.Flags) error {
+func NewLiteConn(f cfg.Flags) error {
 	var err error
 	var attempts liteConnTime
 	attempts.attempts = 3
@@ -94,7 +95,7 @@ func NewLiteConn(f utils.Flags) error {
 	return nil
 }
 
-func connectToLiteDB(f utils.Flags) error {
+func connectToLiteDB(f cfg.Flags) error {
 	var err error
 	ps := fmt.Sprintf(f.FlagDBAddr)
 	LiteDB, err = sql.Open("sqlite", ps)
@@ -229,44 +230,42 @@ func (store SQLLiteStore) GetSecretKey(login string) error {
 	WHERE login = $1`
 
 	rows := store.DB.QueryRow(query, login)
-
-	if err := rows.Scan(&Secret); err != nil {
+	var skey string
+	if err := rows.Scan(&skey); err != nil {
 		return err
 	}
+	byteSlice := []byte(skey)
+
+	// Copy the relevant portion of the byte slice into the result array
+	copy(Secret[:], byteSlice)
+
 	return nil
 }
 
 // CreateNewUser - создание нового пользователя на клиенте
 func (store SQLLiteStore) CreateNewUser(ctx context.Context, data RegisterRequest) error {
-	encodedPW := utils.ShaData(data.Password, SecretKey)
-	for {
-		select {
-		case <-ctx.Done():
-			return errTimeout
-		default:
-			mut.Lock()
-			defer mut.Unlock()
-			tx, err := store.DB.BeginTx(ctx, nil)
-			if err != nil {
-				return err
-			}
-			newKey := GenerateSecretKey(data)
-			date := time.Now().Format(time.RFC3339)
-			_, err = store.DB.ExecContext(ctx, `INSERT into users (login, password, secret, created) 
-	values ($1, $2, $3, $4);`,
-				data.Login, encodedPW, newKey, date)
 
-			if err != nil {
-				tx.Rollback()
-				return err
-			}
-			err = tx.Commit()
-			if err != nil {
-				tx.Rollback()
-				return err
-			}
-			return err
-		}
+	mut.Lock()
+	defer mut.Unlock()
+	tx, err := store.DB.BeginTx(ctx, nil)
+	if err != nil {
+
+		return err
 	}
+	newKey := GenerateSecretKey(data)
+	date := time.Now().Format(time.RFC3339)
+	_, err = store.DB.ExecContext(ctx, `INSERT into users (login, password, secret, created) 
+	values ($1, $2, $3, $4);`,
+		data.Login, data.Password, newKey, date)
 
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	return err
 }

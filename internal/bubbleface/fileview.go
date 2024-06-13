@@ -2,7 +2,6 @@ package face
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/Azcarot/PasswordStorage/internal/storage"
 	tea "github.com/charmbracelet/bubbletea"
@@ -11,11 +10,11 @@ import (
 type fileViewModel struct {
 	choices  []string
 	cursor   int
-	datas    []storage.FileResponse
+	datas    []storage.FileData
 	selected map[int]struct{}
 }
 
-var selectedFile storage.FileResponse
+var selectedFile storage.FileData
 var fileViewHeader string = "Main file menu, please chose your file:\n\n"
 
 // NewFileViewModel - основная функция для построения и просмотра
@@ -23,7 +22,7 @@ var fileViewHeader string = "Main file menu, please chose your file:\n\n"
 func NewFileViewModel() fileViewModel {
 	ctx := context.WithValue(context.Background(), storage.UserLoginCtxKey, storage.UserLoginPw.Login)
 	var choices []string
-	var files []storage.FileResponse
+	var files []storage.FileData
 	data, err := storage.FLiteS.GetAllRecords(ctx)
 	if err != nil {
 		return fileViewModel{
@@ -33,11 +32,17 @@ func NewFileViewModel() fileViewModel {
 			selected: make(map[int]struct{}),
 		}
 	}
-	var b [16]byte
-	copy(b[:], storage.Secret)
-	ctx = context.WithValue(context.Background(), storage.EncryptionCtxKey, b)
-	choices, files = deCypherFile(ctx, data.([]storage.FileResponse))
 
+	choices, files, err = deCypherFile(ctx, data.([]storage.FileData))
+	if err != nil {
+		fileViewHeader = "File view error occured, please try again"
+		return fileViewModel{
+
+			choices: []string{},
+
+			selected: make(map[int]struct{}),
+		}
+	}
 	return fileViewModel{
 
 		choices:  choices,
@@ -59,33 +64,4 @@ func (m fileViewModel) View() string {
 
 func (m fileViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return buildUpdate(&fileViewHeader, msg, &m, NewFileMenuModel(), updateFileViewModel)
-}
-
-func deCypherFile(ctx context.Context, cards []storage.FileResponse) ([]string, []storage.FileResponse) {
-	var err error
-	var choices []string
-	var datas []storage.FileResponse
-	for _, data := range cards {
-		data.FileName, err = storage.Dechypher(ctx, data.FileName)
-		if err != nil {
-			continue
-		}
-		data.Path, err = storage.Dechypher(ctx, data.Path)
-		if err != nil {
-			continue
-		}
-		data.Data, err = storage.Dechypher(ctx, data.Data)
-		if err != nil {
-			continue
-		}
-		data.Comment, err = storage.Dechypher(ctx, data.Comment)
-		if err != nil {
-			continue
-		}
-
-		str := fmt.Sprintf("Your file name: %s \nYour file path: %s \nComment: %s", data.FileName, data.Path, data.Comment)
-		choices = append(choices, str)
-		datas = append(datas, data)
-	}
-	return choices, datas
 }

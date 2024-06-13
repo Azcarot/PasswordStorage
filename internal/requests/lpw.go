@@ -8,28 +8,27 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/Azcarot/PasswordStorage/internal/cypher"
 	"github.com/Azcarot/PasswordStorage/internal/storage"
 )
 
 // AddLPWReq - запрос на добавление записи типа логин/пароль на сервере
 func AddLPWReq(data storage.LoginData) (bool, error) {
-	var b [16]byte
-	copy(b[:], storage.Secret)
-	ctx := context.WithValue(context.Background(), storage.EncryptionCtxKey, b)
+	ctx := context.Background()
 	var cyphData storage.LoginData
 	var err error
-	cyphData.Login, err = storage.CypherData(ctx, data.Login)
+	cyphData.Login, err = cypher.CypherData(ctx, data.Login)
 
 	if err != nil {
 		return false, err
 	}
-	cyphData.Password, err = storage.CypherData(ctx, data.Password)
+	cyphData.Password, err = cypher.CypherData(ctx, data.Password)
 
 	if err != nil {
 		return false, err
 	}
 
-	cyphData.Comment, err = storage.CypherData(ctx, data.Comment)
+	cyphData.Comment, err = cypher.CypherData(ctx, data.Comment)
 	if err != nil {
 		return false, err
 	}
@@ -67,23 +66,21 @@ func AddLPWReq(data storage.LoginData) (bool, error) {
 
 // UpdateLPWReq - запрос на обновление данных типа логин/пароль на сервере
 func UpdateLPWReq(data storage.LoginData) (bool, error) {
-	var b [16]byte
-	copy(b[:], storage.Secret)
-	ctx := context.WithValue(context.Background(), storage.EncryptionCtxKey, b)
+	ctx := context.Background()
 	var cyphData storage.LoginData
 	var err error
-	cyphData.Login, err = storage.CypherData(ctx, data.Login)
+	cyphData.Login, err = cypher.CypherData(ctx, data.Login)
 
 	if err != nil {
 		return false, err
 	}
-	cyphData.Password, err = storage.CypherData(ctx, data.Password)
+	cyphData.Password, err = cypher.CypherData(ctx, data.Password)
 
 	if err != nil {
 		return false, err
 	}
 
-	cyphData.Comment, err = storage.CypherData(ctx, data.Comment)
+	cyphData.Comment, err = cypher.CypherData(ctx, data.Comment)
 	if err != nil {
 		return false, err
 	}
@@ -123,23 +120,22 @@ func UpdateLPWReq(data storage.LoginData) (bool, error) {
 
 // DeleteLPWReq - запрос на удаление данных типа логин/пароль на сервере
 func DeleteLPWReq(data storage.LoginData) (bool, error) {
-	var b [16]byte
-	copy(b[:], storage.Secret)
-	ctx := context.WithValue(context.Background(), storage.EncryptionCtxKey, b)
+
+	ctx := context.Background()
 	var cyphData storage.LoginData
 	var err error
-	cyphData.Login, err = storage.CypherData(ctx, data.Login)
+	cyphData.Login, err = cypher.CypherData(ctx, data.Login)
 
 	if err != nil {
 		return false, err
 	}
-	cyphData.Password, err = storage.CypherData(ctx, data.Password)
+	cyphData.Password, err = cypher.CypherData(ctx, data.Password)
 
 	if err != nil {
 		return false, err
 	}
 
-	cyphData.Comment, err = storage.CypherData(ctx, data.Comment)
+	cyphData.Comment, err = cypher.CypherData(ctx, data.Comment)
 	if err != nil {
 		return false, err
 	}
@@ -238,7 +234,7 @@ func SyncLPWReq() (bool, error) {
 			return false, err
 		}
 		var newLPWData []storage.LoginData
-		for _, lpw := range newData.([]storage.LoginResponse) {
+		for _, lpw := range newData.([]storage.LoginData) {
 			var data storage.LoginData
 			data.ID = lpw.ID
 			newLPWData = append(newLPWData, data)

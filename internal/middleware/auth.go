@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Azcarot/PasswordStorage/internal/auth"
 	"github.com/Azcarot/PasswordStorage/internal/storage"
 )
 
@@ -12,7 +13,7 @@ import (
 func CheckAuthorization(h http.Handler) http.Handler {
 	login := func(res http.ResponseWriter, req *http.Request) {
 		token := req.Header.Get("Authorization")
-		claims, ok := storage.VerifyToken(token)
+		claims, ok := auth.VerifyToken(token)
 		if !ok {
 			res.WriteHeader(http.StatusUnauthorized)
 			return

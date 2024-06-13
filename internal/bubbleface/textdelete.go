@@ -9,7 +9,7 @@ import (
 
 type textDeleteModel struct {
 	choices  []string
-	datas    []storage.TextResponse
+	datas    []storage.TextData
 	cursor   int
 	selected map[int]struct{}
 }
@@ -21,7 +21,7 @@ var textDeleteHeader string = "Please select text to delete"
 func NewTextDeleteModel() textDeleteModel {
 	ctx := context.WithValue(context.Background(), storage.UserLoginCtxKey, storage.UserLoginPw.Login)
 	var choices []string
-	var datas []storage.TextResponse
+	var datas []storage.TextData
 	data, err := storage.TLiteS.GetAllRecords(ctx)
 	if err != nil {
 		return textDeleteModel{
@@ -31,10 +31,16 @@ func NewTextDeleteModel() textDeleteModel {
 			selected: make(map[int]struct{}),
 		}
 	}
-	var b [16]byte
-	copy(b[:], storage.Secret)
-	ctx = context.WithValue(context.Background(), storage.EncryptionCtxKey, b)
-	choices, datas = deCypherText(ctx, data.([]storage.TextResponse))
+	choices, datas, err = deCypherText(ctx, data.([]storage.TextData))
+	if err != nil {
+		textViewHeader = "Text delete error has occured, please try agan"
+		return textDeleteModel{
+
+			choices: []string{},
+
+			selected: make(map[int]struct{}),
+		}
+	}
 
 	return textDeleteModel{
 

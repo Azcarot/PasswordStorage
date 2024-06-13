@@ -3,18 +3,18 @@ package router
 import (
 	"net/http"
 
+	"github.com/Azcarot/PasswordStorage/internal/cfg"
 	"github.com/Azcarot/PasswordStorage/internal/handlers"
 	"github.com/Azcarot/PasswordStorage/internal/middleware"
-	"github.com/Azcarot/PasswordStorage/internal/utils"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 )
 
 // Flag - полученные флаги
-var Flag utils.Flags
+var Flag cfg.Flags
 
 // MakeRouter - создание chi роутера со всеми ручками и миддварями
-func MakeRouter(flag utils.Flags) *chi.Mux {
+func MakeRouter(flag cfg.Flags) *chi.Mux {
 
 	logger, err := zap.NewDevelopment()
 	if err != nil {

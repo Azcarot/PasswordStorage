@@ -8,35 +8,34 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/Azcarot/PasswordStorage/internal/cypher"
 	"github.com/Azcarot/PasswordStorage/internal/storage"
 )
 
 // AddFileReq - запрос на добавление файла на сервер
 func AddFileReq(data storage.FileData) (bool, error) {
-	var b [16]byte
-	copy(b[:], storage.Secret)
-	ctx := context.WithValue(context.Background(), storage.EncryptionCtxKey, b)
+	ctx := context.Background()
 	var cyphData storage.FileData
 	var err error
-	cyphData.FileName, err = storage.CypherData(ctx, data.FileName)
+	cyphData.FileName, err = cypher.CypherData(ctx, data.FileName)
 
 	if err != nil {
 		return false, err
 	}
 
-	cyphData.Path, err = storage.CypherData(ctx, data.Path)
+	cyphData.Path, err = cypher.CypherData(ctx, data.Path)
 
 	if err != nil {
 		return false, err
 	}
 
-	cyphData.Data, err = storage.CypherData(ctx, data.Data)
+	cyphData.Data, err = cypher.CypherData(ctx, data.Data)
 
 	if err != nil {
 		return false, err
 	}
 
-	cyphData.Comment, err = storage.CypherData(ctx, data.Comment)
+	cyphData.Comment, err = cypher.CypherData(ctx, data.Comment)
 	if err != nil {
 		return false, err
 	}
@@ -74,30 +73,28 @@ func AddFileReq(data storage.FileData) (bool, error) {
 
 // UpdateFileReq - запрос на обновление файловых данных на сервере
 func UpdateFileReq(data storage.FileData) (bool, error) {
-	var b [16]byte
-	copy(b[:], storage.Secret)
-	ctx := context.WithValue(context.Background(), storage.EncryptionCtxKey, b)
+	ctx := context.Background()
 	var cyphData storage.FileData
 	var err error
-	cyphData.FileName, err = storage.CypherData(ctx, data.FileName)
+	cyphData.FileName, err = cypher.CypherData(ctx, data.FileName)
 
 	if err != nil {
 		return false, err
 	}
 
-	cyphData.Path, err = storage.CypherData(ctx, data.Path)
+	cyphData.Path, err = cypher.CypherData(ctx, data.Path)
 
 	if err != nil {
 		return false, err
 	}
 
-	cyphData.Data, err = storage.CypherData(ctx, data.Data)
+	cyphData.Data, err = cypher.CypherData(ctx, data.Data)
 
 	if err != nil {
 		return false, err
 	}
 
-	cyphData.Comment, err = storage.CypherData(ctx, data.Comment)
+	cyphData.Comment, err = cypher.CypherData(ctx, data.Comment)
 	if err != nil {
 		return false, err
 	}
@@ -137,28 +134,27 @@ func UpdateFileReq(data storage.FileData) (bool, error) {
 
 // DeleteFileReq - запрос на удаление файловых данных на сервере
 func DeleteFileReq(data storage.FileData) (bool, error) {
-	var b [16]byte
-	copy(b[:], storage.Secret)
-	ctx := context.WithValue(context.Background(), storage.EncryptionCtxKey, b)
+	ctx := context.Background()
+
 	var cyphData storage.FileData
 	var err error
-	cyphData.FileName, err = storage.CypherData(ctx, data.FileName)
+	cyphData.FileName, err = cypher.CypherData(ctx, data.FileName)
 
 	if err != nil {
 		return false, err
 	}
-	cyphData.Path, err = storage.CypherData(ctx, data.Path)
+	cyphData.Path, err = cypher.CypherData(ctx, data.Path)
 
 	if err != nil {
 		return false, err
 	}
-	cyphData.Data, err = storage.CypherData(ctx, data.Data)
+	cyphData.Data, err = cypher.CypherData(ctx, data.Data)
 
 	if err != nil {
 		return false, err
 	}
 
-	cyphData.Comment, err = storage.CypherData(ctx, data.Comment)
+	cyphData.Comment, err = cypher.CypherData(ctx, data.Comment)
 	if err != nil {
 		return false, err
 	}
@@ -257,7 +253,7 @@ func SyncFileReq() (bool, error) {
 			return false, err
 		}
 		var newFileData []storage.FileData
-		for _, file := range newData.([]storage.FileResponse) {
+		for _, file := range newData.([]storage.FileData) {
 			var data storage.FileData
 			data.ID = file.ID
 			newFileData = append(newFileData, data)

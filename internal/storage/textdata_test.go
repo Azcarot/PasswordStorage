@@ -20,7 +20,6 @@ func TestTextSQL_CreateNewRecord(t *testing.T) {
 		name string
 		args args
 	}{
-		{name: "No secret", args: args{data: TextData{ID: 1, Text: "11", User: "User"}, wantErr: true}},
 		{name: "Secret", args: args{data: TextData{ID: 1, Text: "11", User: "User"}, secret: "secret", wantErr: false}},
 	}
 
@@ -28,11 +27,6 @@ func TestTextSQL_CreateNewRecord(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			TST.AddData(tt.args.data)
 			ctx := context.WithValue(context.Background(), UserLoginCtxKey, tt.args.data.User)
-			if len(tt.args.secret) != 0 {
-				var b [16]byte
-				copy(b[:], Secret)
-				ctx = context.WithValue(ctx, EncryptionCtxKey, b)
-			}
 			err := TST.CreateNewRecord(ctx)
 			if (err != nil) != tt.args.wantErr {
 				t.Errorf("AddCardReq() error = %v, wantErr %v, test %v", err, tt.args.wantErr, tt.name)
@@ -53,7 +47,6 @@ func TestTextSQL_UpdateRecord(t *testing.T) {
 		name string
 		args args
 	}{
-		{name: "No secret", args: args{data: TextData{ID: 1, Text: "11", User: "User"}, wantErr: true}},
 		{name: "Secret", args: args{data: TextData{ID: 1, Text: "11", User: "User"}, secret: "secret", wantErr: false}},
 	}
 
@@ -61,11 +54,7 @@ func TestTextSQL_UpdateRecord(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			TST.AddData(tt.args.data)
 			ctx := context.WithValue(context.Background(), UserLoginCtxKey, tt.args.data.User)
-			if len(tt.args.secret) != 0 {
-				var b [16]byte
-				copy(b[:], Secret)
-				ctx = context.WithValue(ctx, EncryptionCtxKey, b)
-			}
+
 			err := TST.UpdateRecord(ctx)
 			if (err != nil) != tt.args.wantErr {
 				t.Errorf("UpdateReq() error = %v, wantErr %v, test %v", err, tt.args.wantErr, tt.name)
@@ -93,11 +82,7 @@ func TestTextSQL_DeleteRecord(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			TST.AddData(tt.args.data)
 			ctx := context.WithValue(context.Background(), UserLoginCtxKey, tt.args.data.User)
-			if len(tt.args.secret) != 0 {
-				var b [16]byte
-				copy(b[:], Secret)
-				ctx = context.WithValue(ctx, EncryptionCtxKey, b)
-			}
+
 			err := TST.DeleteRecord(ctx)
 			if (err != nil) != tt.args.wantErr {
 				t.Errorf("DeleteReq() error = %v, wantErr %v, test %v", err, tt.args.wantErr, tt.name)
@@ -119,7 +104,6 @@ func TestTextSQL_GetAllRecords(t *testing.T) {
 		args args
 	}{
 		{name: "No login", args: args{data: TextData{ID: 1, Text: "11"}, wantErr: true}},
-		{name: "No secret", args: args{data: TextData{ID: 1, Text: "11", User: "User"}, wantErr: false}},
 		{name: "Secret", args: args{data: TextData{ID: 1, Text: "11", User: "User"}, secret: "secret", wantErr: false}},
 	}
 
@@ -133,11 +117,6 @@ func TestTextSQL_GetAllRecords(t *testing.T) {
 				ctx = context.Background()
 			}
 
-			if len(tt.args.secret) != 0 {
-				var b [16]byte
-				copy(b[:], Secret)
-				ctx = context.WithValue(ctx, EncryptionCtxKey, b)
-			}
 			_, err := TST.GetAllRecords(ctx)
 			if (err != nil) != tt.args.wantErr {
 				t.Errorf("GetAllRecordsReq() error = %v, wantErr %v, test %v", err, tt.args.wantErr, tt.name)

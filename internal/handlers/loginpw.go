@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Azcarot/PasswordStorage/internal/cypher"
 	"github.com/Azcarot/PasswordStorage/internal/storage"
 	"github.com/jackc/pgx/v5"
 )
@@ -40,6 +41,12 @@ func AddNewLoginPw(res http.ResponseWriter, req *http.Request) {
 	mut.Lock()
 	defer mut.Unlock()
 	loginPw.Date = time.Now().Format(time.RFC3339)
+
+	err = cypher.CypherLPWData(ctx, &loginPw)
+	if err != nil {
+		res.WriteHeader(http.StatusUnprocessableEntity)
+		return
+	}
 	err = storage.LPST.AddData(loginPw)
 	if err != nil {
 		res.WriteHeader(http.StatusUnprocessableEntity)
@@ -89,7 +96,16 @@ func GetLoginPW(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
+	cyphData, ok := lpwData.(storage.LoginData)
+	if !ok {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	err = cypher.DeCypherLPWData(ctx, &cyphData)
+	if err != nil {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	result, err := json.Marshal(lpwData)
 	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
@@ -139,13 +155,23 @@ func UpdateLoginPW(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
-	oldData, ok := old.(storage.LoginResponse)
+	oldData, ok := old.(storage.LoginData)
 	if ok {
+		err = cypher.DeCypherLPWData(ctx, &oldData)
+		if err != nil {
+			res.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 		if loginPWData.Login == "" {
 			loginPWData.Login = oldData.Login
 		}
 		if loginPWData.Password == "" {
 			loginPWData.Password = oldData.Password
+		}
+		err = cypher.CypherLPWData(ctx, &loginPWData)
+		if err != nil {
+			res.WriteHeader(http.StatusUnprocessableEntity)
+			return
 		}
 		err = storage.LPST.AddData(loginPWData)
 		if err != nil {
@@ -153,6 +179,7 @@ func UpdateLoginPW(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 	}
+
 	err = storage.LPST.UpdateRecord(ctx)
 	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
@@ -268,7 +295,22 @@ func GetAllLoginPWs(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	result, err := json.Marshal(lpwData)
+	cyphData, ok := lpwData.([]storage.LoginData)
+	if !ok {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	for i, lpw := range cyphData {
+		err = cypher.DeCypherLPWData(ctx, &lpw)
+		if err != nil {
+			res.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		cyphData[i] = lpw
+	}
+
+	result, err := json.Marshal(cyphData)
 	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
 		return

@@ -16,7 +16,6 @@ func TestCardLiteSQL_CreateNewRecord(t *testing.T) {
 		name string
 		args args
 	}{
-		{name: "No secret", args: args{data: BankCardData{ID: 1, CardNumber: "11", User: "User", ExpDate: "ExpDate"}, wantErr: false}},
 		{name: "Secret", args: args{data: BankCardData{ID: 1, CardNumber: "11", User: "User", ExpDate: "ExpDate"}, secret: "secret", wantErr: false}},
 	}
 
@@ -24,11 +23,6 @@ func TestCardLiteSQL_CreateNewRecord(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			BCLiteS.AddData(tt.args.data)
 			ctx := context.WithValue(context.Background(), UserLoginCtxKey, tt.args.data.User)
-			if len(tt.args.secret) != 0 {
-				var b [16]byte
-				copy(b[:], Secret)
-				ctx = context.WithValue(ctx, EncryptionCtxKey, b)
-			}
 			err := BCLiteS.CreateNewRecord(ctx)
 			if (err != nil) != tt.args.wantErr {
 				t.Errorf("AddCardReq() error = %v, wantErr %v, test %v", err, tt.args.wantErr, tt.name)
@@ -49,7 +43,6 @@ func TestCardLiteSQL_UpdateRecord(t *testing.T) {
 		name string
 		args args
 	}{
-		{name: "No secret", args: args{data: BankCardData{ID: 1, CardNumber: "11", User: "User", ExpDate: "ExpDate"}, wantErr: true}},
 		{name: "Secret", args: args{data: BankCardData{ID: 1, CardNumber: "11", User: "User", ExpDate: "ExpDate"}, secret: "secret", wantErr: false}},
 	}
 
@@ -57,11 +50,6 @@ func TestCardLiteSQL_UpdateRecord(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			BCLiteS.AddData(tt.args.data)
 			ctx := context.WithValue(context.Background(), UserLoginCtxKey, tt.args.data.User)
-			if len(tt.args.secret) != 0 {
-				var b [16]byte
-				copy(b[:], Secret)
-				ctx = context.WithValue(ctx, EncryptionCtxKey, b)
-			}
 			err := BCLiteS.UpdateRecord(ctx)
 			if (err != nil) != tt.args.wantErr {
 				t.Errorf("UpdateReq() error = %v, wantErr %v, test %v", err, tt.args.wantErr, tt.name)
@@ -89,11 +77,6 @@ func TestCardLiteSQL_DeleteRecord(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			BCLiteS.AddData(tt.args.data)
 			ctx := context.WithValue(context.Background(), UserLoginCtxKey, tt.args.data.User)
-			if len(tt.args.secret) != 0 {
-				var b [16]byte
-				copy(b[:], Secret)
-				ctx = context.WithValue(ctx, EncryptionCtxKey, b)
-			}
 			err := BCLiteS.DeleteRecord(ctx)
 			if (err != nil) != tt.args.wantErr {
 				t.Errorf("DeleteReq() error = %v, wantErr %v, test %v", err, tt.args.wantErr, tt.name)
@@ -115,7 +98,6 @@ func TestCardLiteSQL_GetAllRecords(t *testing.T) {
 		args args
 	}{
 		{name: "No login", args: args{data: BankCardData{ID: 1, CardNumber: "11", ExpDate: "ExpDate"}, wantErr: true}},
-		{name: "No secret", args: args{data: BankCardData{ID: 1, CardNumber: "11", User: "User", ExpDate: "ExpDate"}, wantErr: false}},
 		{name: "Secret", args: args{data: BankCardData{ID: 1, CardNumber: "11", User: "User", ExpDate: "ExpDate"}, secret: "secret", wantErr: false}},
 	}
 
@@ -129,11 +111,6 @@ func TestCardLiteSQL_GetAllRecords(t *testing.T) {
 				ctx = context.Background()
 			}
 
-			if len(tt.args.secret) != 0 {
-				var b [16]byte
-				copy(b[:], Secret)
-				ctx = context.WithValue(ctx, EncryptionCtxKey, b)
-			}
 			_, err := BCLiteS.GetAllRecords(ctx)
 			if (err != nil) != tt.args.wantErr {
 				t.Errorf("GetAllRecordsReq() error = %v, wantErr %v, test %v", err, tt.args.wantErr, tt.name)

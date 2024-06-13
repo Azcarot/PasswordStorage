@@ -7,8 +7,8 @@ import (
 	"log"
 
 	face "github.com/Azcarot/PasswordStorage/internal/bubbleface"
+	"github.com/Azcarot/PasswordStorage/internal/cfg"
 	"github.com/Azcarot/PasswordStorage/internal/storage"
-	"github.com/Azcarot/PasswordStorage/internal/utils"
 )
 
 var (
@@ -19,7 +19,7 @@ var (
 
 func main() {
 	fmt.Printf("Build version=%s\nBuild date =%s\nBuild commit =%s\n", buildVersion, buildDate, buildCommit)
-	flag := utils.ParseFlagsAndENV()
+	flag := cfg.ParseFlagsAndENV()
 	if flag.FlagDBAddr != "" {
 		err := storage.NewLiteConn(flag)
 		if err != nil {

@@ -9,7 +9,7 @@ import (
 
 type lpwDeleteModel struct {
 	choices  []string
-	datas    []storage.LoginResponse
+	datas    []storage.LoginData
 	cursor   int
 	selected map[int]struct{}
 }
@@ -21,7 +21,7 @@ var lpwDeleteHeader string = "Please select text to delete"
 func NewLPWDeleteModel() lpwDeleteModel {
 	ctx := context.WithValue(context.Background(), storage.UserLoginCtxKey, storage.UserLoginPw.Login)
 	var choices []string
-	var datas []storage.LoginResponse
+	var datas []storage.LoginData
 	data, err := storage.LPWLiteS.GetAllRecords(ctx)
 	if err != nil {
 		return lpwDeleteModel{
@@ -31,10 +31,16 @@ func NewLPWDeleteModel() lpwDeleteModel {
 			selected: make(map[int]struct{}),
 		}
 	}
-	var b [16]byte
-	copy(b[:], storage.Secret)
-	ctx = context.WithValue(context.Background(), storage.EncryptionCtxKey, b)
-	choices, datas = deCypherLPW(ctx, data.([]storage.LoginResponse))
+	choices, datas, err = deCypherLPW(ctx, data.([]storage.LoginData))
+	if err != nil {
+		lpwViewHeader = "Login/password delete error has occured, please try agan"
+		return lpwDeleteModel{
+
+			choices: []string{},
+
+			selected: make(map[int]struct{}),
+		}
+	}
 
 	return lpwDeleteModel{
 

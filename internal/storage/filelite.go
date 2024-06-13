@@ -63,34 +63,23 @@ func (store *FileLiteStorage) GetRecord(ctx context.Context) (any, error) {
 	if !ok {
 		return nil, ErrNoLogin
 	}
-	result := FileResponse{}
+	result := FileData{}
 
-	for {
-		select {
-		case <-ctx.Done():
-			return result, errTimeout
-		default:
-			query := `SELECT file_name, file_path, data, comment
+	query := `SELECT file_name, file_path, data, comment
 	FROM file_data
 	WHERE username = $1 AND id = $2`
 
-			rows := store.DB.QueryRowContext(ctx, query, dataLogin, store.Data.ID)
+	rows := store.DB.QueryRowContext(ctx, query, dataLogin, store.Data.ID)
 
-			if err := rows.Scan(&store.Data.FileName, &store.Data.Path, &store.Data.Data, &store.Data.Comment); err != nil {
-				return result, err
-			}
-			err := store.DeCypherFileData(ctx)
-			if err != nil {
-				return result, err
-			}
-			result.FileName = store.Data.FileName
-			result.Path = store.Data.Path
-			result.Data = store.Data.Data
-			result.Comment = store.Data.Comment
-			return result, nil
-		}
-
+	if err := rows.Scan(&store.Data.FileName, &store.Data.Path, &store.Data.Data, &store.Data.Comment); err != nil {
+		return result, err
 	}
+
+	result.FileName = store.Data.FileName
+	result.Path = store.Data.Path
+	result.Data = store.Data.Data
+	result.Comment = store.Data.Comment
+	return result, nil
 }
 
 // UpdateRecord - обновление файловых данных на клиенте по id
@@ -99,10 +88,7 @@ func (store *FileLiteStorage) UpdateRecord(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	err = store.CypherFileData(ctx)
-	if err != nil {
-		return err
-	}
+
 	query := `UPDATE file_data SET
 	file_name = $1, file_path =$2, data = $3, comment = $4, created = $5
 	WHERE id = $6`
@@ -148,55 +134,44 @@ func (store *FileLiteStorage) SearchRecord(ctx context.Context) (any, error) {
 	if !ok {
 		return nil, ErrNoLogin
 	}
-	result := []FileResponse{}
+	result := []FileData{}
 
-	for {
-		select {
-		case <-ctx.Done():
-			return result, errTimeout
-		default:
-			query := `SELECT file_name, file_path, data, comment
+	query := `SELECT file_name, file_path, data, comment
 	FROM file_data
 	WHERE username = $1 
 	ORDER BY id DESC`
 
-			rows, err := store.DB.QueryContext(ctx, query, dataLogin)
-			if err != nil {
-				return nil, err
-			}
-			defer rows.Close()
-			for rows.Next() {
-				var resp FileResponse
-				myMap := make(map[string]string)
-				if err := rows.Scan(&store.Data.FileName, &store.Data.Path, &store.Data.Data, &store.Data.Comment); err != nil {
-					return result, err
-				}
-				err := store.DeCypherFileData(ctx)
-				if err != nil {
-					return result, err
-				}
-				myMap["Filename"] = store.Data.FileName
-				myMap["Data"] = store.Data.Data
-				myMap["Comment"] = store.Data.Comment
-				myMap["Path"] = store.Data.Path
-				for _, value := range myMap {
-					if strings.Contains(strings.ToLower(value), strings.ToLower(store.Data.Str)) {
-						resp.FileName = myMap["Filename"]
-						resp.Data = myMap["Data"]
-						resp.Comment = myMap["Comment"]
-						resp.Path = myMap["Path"]
-						result = append(result, resp)
-					}
-				}
-
-			}
-			if err = rows.Err(); err != nil {
-				return result, err
-			}
-			return result, nil
-		}
+	rows, err := store.DB.QueryContext(ctx, query, dataLogin)
+	if err != nil {
+		return nil, err
 	}
+	defer rows.Close()
+	for rows.Next() {
+		var resp FileData
+		myMap := make(map[string]string)
+		if err := rows.Scan(&store.Data.FileName, &store.Data.Path, &store.Data.Data, &store.Data.Comment); err != nil {
+			return result, err
+		}
 
+		myMap["Filename"] = store.Data.FileName
+		myMap["Data"] = store.Data.Data
+		myMap["Comment"] = store.Data.Comment
+		myMap["Path"] = store.Data.Path
+		for _, value := range myMap {
+			if strings.Contains(strings.ToLower(value), strings.ToLower(store.Data.Str)) {
+				resp.FileName = myMap["Filename"]
+				resp.Data = myMap["Data"]
+				resp.Comment = myMap["Comment"]
+				resp.Path = myMap["Path"]
+				result = append(result, resp)
+			}
+		}
+
+	}
+	if err = rows.Err(); err != nil {
+		return result, err
+	}
+	return result, nil
 }
 
 // GetAllRecords - получение всех файловых данных пользователя на клиенте
@@ -206,97 +181,35 @@ func (store *FileLiteStorage) GetAllRecords(ctx context.Context) (any, error) {
 	if !ok {
 		return nil, ErrNoLogin
 	}
-	result := []FileResponse{}
+	result := []FileData{}
 
-	for {
-		select {
-		case <-ctx.Done():
-			return result, errTimeout
-		default:
-			query := `SELECT id, file_name, file_path, data, comment
+	query := `SELECT id, file_name, file_path, data, comment
 	FROM file_data 
 	WHERE username = $1
 	ORDER BY id DESC`
 
-			rows, err := store.DB.QueryContext(ctx, query, dataLogin)
-			if err != nil {
-				return nil, err
-			}
-			defer rows.Close()
-			for rows.Next() {
-				var resp FileResponse
-				if err := rows.Scan(&store.Data.ID, &store.Data.FileName, &store.Data.Path, &store.Data.Data, &store.Data.Comment); err != nil {
-					return result, err
-				}
-
-				resp.ID = store.Data.ID
-				resp.FileName = store.Data.FileName
-				resp.Path = store.Data.Path
-				resp.Data = store.Data.Data
-				resp.Comment = store.Data.Comment
-				result = append(result, resp)
-			}
-			if err = rows.Err(); err != nil {
-				return result, err
-			}
-			return result, nil
+	rows, err := store.DB.QueryContext(ctx, query, dataLogin)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var resp FileData
+		if err := rows.Scan(&store.Data.ID, &store.Data.FileName, &store.Data.Path, &store.Data.Data, &store.Data.Comment); err != nil {
+			return result, err
 		}
-	}
 
-}
-
-// CypherFileData - шифрование файловых данных пользователя на клиенте
-func (store *FileLiteStorage) CypherFileData(ctx context.Context) error {
-	var err error
-	store.Data.FileName, err = CypherData(ctx, store.Data.FileName)
-	if err != nil {
-		return err
+		resp.ID = store.Data.ID
+		resp.FileName = store.Data.FileName
+		resp.Path = store.Data.Path
+		resp.Data = store.Data.Data
+		resp.Comment = store.Data.Comment
+		result = append(result, resp)
 	}
-
-	store.Data.Path, err = CypherData(ctx, store.Data.Path)
-	if err != nil {
-		return err
+	if err = rows.Err(); err != nil {
+		return result, err
 	}
-
-	store.Data.Data, err = CypherData(ctx, store.Data.Data)
-	if err != nil {
-		return err
-	}
-
-	store.Data.Comment, err = CypherData(ctx, store.Data.Comment)
-	if err != nil {
-		return err
-	}
-	store.Data.Str, err = CypherData(ctx, store.Data.Str)
-	if err != nil {
-		return err
-	}
-	return err
-}
-
-// DeCypherFileData - дешифровка файловых данных на клиенте
-func (store *FileLiteStorage) DeCypherFileData(ctx context.Context) error {
-	var err error
-	store.Data.FileName, err = Dechypher(ctx, store.Data.FileName)
-	if err != nil {
-		return err
-	}
-
-	store.Data.Path, err = Dechypher(ctx, store.Data.Path)
-	if err != nil {
-		return err
-	}
-
-	store.Data.Data, err = Dechypher(ctx, store.Data.Data)
-	if err != nil {
-		return err
-	}
-	store.Data.Comment, err = Dechypher(ctx, store.Data.Comment)
-	if err != nil {
-		return err
-	}
-
-	return err
+	return result, nil
 }
 
 // HashDatabaseData - получение хэша из всех файловых данных пользователя на клиенте
@@ -305,7 +218,7 @@ func (store *FileLiteStorage) HashDatabaseData(ctx context.Context) (string, err
 	if err != nil {
 		return "", err
 	}
-	jsonData, err := json.Marshal(fileData.([]FileResponse))
+	jsonData, err := json.Marshal(fileData.([]FileData))
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal file data: %v", err)
 	}

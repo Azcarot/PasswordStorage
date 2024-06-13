@@ -36,18 +36,18 @@ func (m *MockPgxConn) EXPECT() *MockPgxConnMockRecorder {
 }
 
 // CheckUserExists mocks base method.
-func (m *MockPgxConn) CheckUserExists(arg0 storage.UserData) (bool, error) {
+func (m *MockPgxConn) CheckUserExists(arg0 context.Context, arg1 storage.UserData) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CheckUserExists", arg0)
+	ret := m.ctrl.Call(m, "CheckUserExists", arg0, arg1)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CheckUserExists indicates an expected call of CheckUserExists.
-func (mr *MockPgxConnMockRecorder) CheckUserExists(arg0 interface{}) *gomock.Call {
+func (mr *MockPgxConnMockRecorder) CheckUserExists(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckUserExists", reflect.TypeOf((*MockPgxConn)(nil).CheckUserExists), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckUserExists", reflect.TypeOf((*MockPgxConn)(nil).CheckUserExists), arg0, arg1)
 }
 
 // CheckUserPassword mocks base method.

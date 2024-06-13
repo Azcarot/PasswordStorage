@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/Azcarot/PasswordStorage/internal/cypher"
 	"github.com/Azcarot/PasswordStorage/internal/storage"
 )
 
@@ -48,7 +49,21 @@ func SyncBankData(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	jsonData, err := json.Marshal(allData)
+	decData, ok := allData.([]storage.BankCardData)
+	if !ok {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	for i, card := range decData {
+		err = cypher.DeCypherBankData(ctx, &card)
+		if err != nil {
+			res.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		decData[i] = card
+	}
+
+	jsonData, err := json.Marshal(decData)
 	if err != nil {
 
 		res.WriteHeader(http.StatusInternalServerError)
@@ -100,7 +115,22 @@ func SyncTextData(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	jsonData, err := json.Marshal(allData)
+	cyphData, ok := allData.([]storage.TextData)
+	if !ok {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	for i, text := range cyphData {
+		err = cypher.DeCypherTextData(ctx, &text)
+		if err != nil {
+			res.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		cyphData[i] = text
+	}
+
+	jsonData, err := json.Marshal(cyphData)
 	if err != nil {
 
 		res.WriteHeader(http.StatusInternalServerError)
@@ -151,8 +181,21 @@ func SyncLPWData(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	cyphData, ok := allData.([]storage.LoginData)
+	if !ok {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
-	jsonData, err := json.Marshal(allData)
+	for i, lpw := range cyphData {
+		err = cypher.DeCypherLPWData(ctx, &lpw)
+		if err != nil {
+			res.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		cyphData[i] = lpw
+	}
+	jsonData, err := json.Marshal(cyphData)
 	if err != nil {
 
 		res.WriteHeader(http.StatusInternalServerError)
@@ -204,7 +247,22 @@ func SyncFileData(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	jsonData, err := json.Marshal(allData)
+	files, ok := allData.([]storage.FileData)
+	if !ok {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	for i, file := range files {
+		err := cypher.DeCypherFileData(ctx, &file)
+		if err != nil {
+			res.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		files[i] = file
+	}
+
+	jsonData, err := json.Marshal(files)
 	if err != nil {
 
 		res.WriteHeader(http.StatusInternalServerError)

@@ -2,7 +2,6 @@ package face
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/Azcarot/PasswordStorage/internal/storage"
 	tea "github.com/charmbracelet/bubbletea"
@@ -10,7 +9,7 @@ import (
 
 type cardViewModel struct {
 	choices  []string
-	datas    []storage.BankCardResponse
+	datas    []storage.BankCardData
 	cursor   int
 	selected map[int]struct{}
 }
@@ -19,7 +18,7 @@ type MsgSendData struct {
 	Data string
 }
 
-var selectedCard storage.BankCardResponse
+var selectedCard storage.BankCardData
 var cardViewHeader string = "Main bank card menu, please chose your action:\n\n"
 
 // NewCardViewModel - основная функция для построения и отбражения
@@ -27,7 +26,7 @@ var cardViewHeader string = "Main bank card menu, please chose your action:\n\n"
 func NewCardViewModel() cardViewModel {
 	ctx := context.WithValue(context.Background(), storage.UserLoginCtxKey, storage.UserLoginPw.Login)
 	var choices []string
-	var datas []storage.BankCardResponse
+	var datas []storage.BankCardData
 	data, err := storage.BCLiteS.GetAllRecords(ctx)
 	if err != nil {
 		return cardViewModel{
@@ -37,10 +36,17 @@ func NewCardViewModel() cardViewModel {
 			selected: make(map[int]struct{}),
 		}
 	}
-	var b [16]byte
-	copy(b[:], storage.Secret)
-	ctx = context.WithValue(context.Background(), storage.EncryptionCtxKey, b)
-	choices, datas = deCypherBankCard(ctx, data.([]storage.BankCardResponse))
+
+	choices, datas, err = deCypherBankCard(ctx, data.([]storage.BankCardData))
+	if err != nil {
+		cardViewHeader = "Bank card view error has occured, please try again"
+		return cardViewModel{
+
+			choices: []string{},
+
+			selected: make(map[int]struct{}),
+		}
+	}
 
 	return cardViewModel{
 
@@ -65,39 +71,4 @@ func (m cardViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	return buildUpdate(&cardViewHeader, msg, &m, NewCardMenuModel(), updateViewCardModel)
 
-}
-
-func deCypherBankCard(ctx context.Context, cards []storage.BankCardResponse) ([]string, []storage.BankCardResponse) {
-	var err error
-	var choices []string
-	var datas []storage.BankCardResponse
-	for _, data := range cards {
-
-		data.CardNumber, err = storage.Dechypher(ctx, data.CardNumber)
-		if err != nil {
-			continue
-		}
-		data.Cvc, err = storage.Dechypher(ctx, data.Cvc)
-		if err != nil {
-			continue
-		}
-		data.ExpDate, err = storage.Dechypher(ctx, data.ExpDate)
-		if err != nil {
-			continue
-		}
-		data.FullName, err = storage.Dechypher(ctx, data.FullName)
-		if err != nil {
-			continue
-		}
-		data.Comment, err = storage.Dechypher(ctx, data.Comment)
-		if err != nil {
-			continue
-		}
-		str := fmt.Sprintf("CCN: %s \nCVC: %s   ExpDate: %s   FillName: %s\nComment: %s", data.CardNumber, data.Cvc, data.ExpDate, data.FullName, data.Comment)
-		choices = append(choices, str)
-		datas = append(datas, data)
-
-	}
-
-	return choices, datas
 }

@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Azcarot/PasswordStorage/internal/cypher"
 	"github.com/Azcarot/PasswordStorage/internal/storage"
 	"github.com/jackc/pgx/v5"
 )
@@ -40,6 +41,11 @@ func AddNewText(res http.ResponseWriter, req *http.Request) {
 	mut.Lock()
 	defer mut.Unlock()
 	textData.Date = time.Now().Format(time.RFC3339)
+	err = cypher.CypherTextData(ctx, &textData)
+	if err != nil {
+		res.WriteHeader(http.StatusUnprocessableEntity)
+		return
+	}
 	err = storage.TST.AddData(textData)
 	if err != nil {
 		res.WriteHeader(http.StatusUnprocessableEntity)
@@ -75,6 +81,7 @@ func GetText(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
 	err = storage.TST.AddData(reqData)
 	if err != nil {
 		res.WriteHeader(http.StatusUnprocessableEntity)
@@ -89,7 +96,16 @@ func GetText(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
+	cyphData, ok := textData.(storage.TextData)
+	if !ok {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	err = cypher.DeCypherTextData(ctx, &cyphData)
+	if err != nil {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	result, err := json.Marshal(textData)
 	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
@@ -139,12 +155,21 @@ func UpdateText(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
-	oldData, ok := old.(storage.TextResponse)
+	oldData, ok := old.(storage.TextData)
 	if ok {
+		err = cypher.DeCypherTextData(ctx, &oldData)
+		if err != nil {
+			res.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 		if textData.Text == "" {
 			textData.Text = oldData.Text
 		}
-
+		err = cypher.CypherTextData(ctx, &textData)
+		if err != nil {
+			res.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 		err = storage.TST.AddData(textData)
 		if err != nil {
 			res.WriteHeader(http.StatusUnprocessableEntity)
@@ -235,7 +260,16 @@ func SearchText(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
+	cyphData, ok := textData.(storage.TextData)
+	if !ok {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	err = cypher.DeCypherTextData(ctx, &cyphData)
+	if err != nil {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	result, err := json.Marshal(textData)
 	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
@@ -266,7 +300,20 @@ func GetAllTexts(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	result, err := json.Marshal(textData)
+	cyphData, ok := textData.([]storage.TextData)
+	if !ok {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	for i, text := range cyphData {
+		err = cypher.DeCypherTextData(ctx, &text)
+		if err != nil {
+			res.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		cyphData[i] = text
+	}
+	result, err := json.Marshal(cyphData)
 	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
 		return

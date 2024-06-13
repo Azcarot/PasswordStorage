@@ -82,14 +82,17 @@ func (m regmodel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				req.Password = (m.inputs[pwd].Value())
 				req.Password = strings.TrimSpace(req.Password)
 				ok, err := requests.RegistrationReq(req)
+
 				if err != nil {
 					newheader = "Please enter your credentials"
 					return NewAuthRegModel(), nil
 				}
+
 				if !ok {
 					newheader = "User already exists"
 					return NewAuthRegModel(), tea.ClearScreen
 				}
+
 				storage.UserLoginPw.Login = req.Login
 				storage.UserLoginPw.Password = req.Password
 				ticker := time.NewTicker(5 * time.Second)
