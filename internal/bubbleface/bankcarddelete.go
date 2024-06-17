@@ -32,7 +32,16 @@ func NewCardDeleteModel() cardDeleteModel {
 			selected: make(map[int]struct{}),
 		}
 	}
+	_, ok := data.([]storage.BankCardData)
+	if !ok {
+		cardDeleteHeader = "An error occured, please try again"
+		return cardDeleteModel{
 
+			choices: []string{},
+
+			selected: make(map[int]struct{}),
+		}
+	}
 	choices, datas, err = deCypherBankCard(ctx, data.([]storage.BankCardData))
 	if err != nil {
 		cardDeleteHeader = "An error occured, please try again"

@@ -3,6 +3,7 @@ package requests
 import (
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 
 	mock_storage "github.com/Azcarot/PasswordStorage/internal/mock"
@@ -167,6 +168,57 @@ func TestSyncFileReq(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("SyncFileReq() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_fileSliceToMap(t *testing.T) {
+	type args struct {
+		slice []storage.FileData
+	}
+	tests := []struct {
+		name  string
+		args  args
+		want  map[int]storage.FileData
+		want1 map[int]int
+	}{
+		{name: "11", args: args{slice: []storage.FileData{{ID: 1, FileName: "1111"}}}, want: map[int]storage.FileData{1: {ID: 1, FileName: "1111"}}, want1: map[int]int{1: 1}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, got1 := fileSliceToMap(tt.args.slice)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("fileSliceToMap() got = %v, want %v", got, tt.want)
+			}
+			if !reflect.DeepEqual(got1, tt.want1) {
+				t.Errorf("fileSliceToMap() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
+}
+
+func Test_compareUnorderedFileSlices(t *testing.T) {
+	type args struct {
+		s []storage.FileData
+		c []storage.FileData
+	}
+	tests := []struct {
+		name string
+		args args
+		want []storage.FileData
+	}{
+		{name: "1", args: args{s: []storage.FileData{1: {ID: 1, FileName: "1111"}},
+			c: []storage.FileData{1: {ID: 1, FileName: "1111"}, 2: {ID: 2, FileName: "2222"}}},
+			want: []storage.FileData{0: {ID: 2, FileName: "2222"}}},
+		{name: "2", args: args{s: []storage.FileData{1: {ID: 1, FileName: "1111"}},
+			c: []storage.FileData{1: {ID: 1, FileName: "1111"}}},
+			want: nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := compareUnorderedFileSlices(tt.args.s, tt.args.c); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("compareUnorderedfileSlices() = %v, want %v", got, tt.want)
 			}
 		})
 	}

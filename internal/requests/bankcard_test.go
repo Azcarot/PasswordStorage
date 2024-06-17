@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 
 	mock_storage "github.com/Azcarot/PasswordStorage/internal/mock"
@@ -191,6 +192,57 @@ func TestSyncCardReq(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("SyncCardReq() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_cardSliceToMap(t *testing.T) {
+	type args struct {
+		slice []storage.BankCardData
+	}
+	tests := []struct {
+		name  string
+		args  args
+		want  map[int]storage.BankCardData
+		want1 map[int]int
+	}{
+		{name: "11", args: args{slice: []storage.BankCardData{{ID: 1, CardNumber: "1111"}}}, want: map[int]storage.BankCardData{1: {ID: 1, CardNumber: "1111"}}, want1: map[int]int{1: 1}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, got1 := cardSliceToMap(tt.args.slice)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("cardSliceToMap() got = %v, want %v", got, tt.want)
+			}
+			if !reflect.DeepEqual(got1, tt.want1) {
+				t.Errorf("cardSliceToMap() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
+}
+
+func Test_compareUnorderedCardSlices(t *testing.T) {
+	type args struct {
+		s []storage.BankCardData
+		c []storage.BankCardData
+	}
+	tests := []struct {
+		name string
+		args args
+		want []storage.BankCardData
+	}{
+		{name: "1", args: args{s: []storage.BankCardData{1: {ID: 1, CardNumber: "1111"}},
+			c: []storage.BankCardData{1: {ID: 1, CardNumber: "1111"}, 2: {ID: 2, CardNumber: "2222"}}},
+			want: []storage.BankCardData{0: {ID: 2, CardNumber: "2222"}}},
+		{name: "2", args: args{s: []storage.BankCardData{1: {ID: 1, CardNumber: "1111"}},
+			c: []storage.BankCardData{1: {ID: 1, CardNumber: "1111"}}},
+			want: nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := compareUnorderedCardSlices(tt.args.s, tt.args.c); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("compareUnorderedCardSlices() = %v, want %v", got, tt.want)
 			}
 		})
 	}

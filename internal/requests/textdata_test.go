@@ -3,6 +3,7 @@ package requests
 import (
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 
 	mock_storage "github.com/Azcarot/PasswordStorage/internal/mock"
@@ -167,6 +168,57 @@ func TestSyncTextReq(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("SyncTextReq() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_textSliceToMap(t *testing.T) {
+	type args struct {
+		slice []storage.TextData
+	}
+	tests := []struct {
+		name  string
+		args  args
+		want  map[int]storage.TextData
+		want1 map[int]int
+	}{
+		{name: "11", args: args{slice: []storage.TextData{{ID: 1, Text: "1111"}}}, want: map[int]storage.TextData{1: {ID: 1, Text: "1111"}}, want1: map[int]int{1: 1}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, got1 := textSliceToMap(tt.args.slice)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("textSliceToMap() got = %v, want %v", got, tt.want)
+			}
+			if !reflect.DeepEqual(got1, tt.want1) {
+				t.Errorf("textSliceToMap() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
+}
+
+func Test_compareUnorderedTextSlices(t *testing.T) {
+	type args struct {
+		s []storage.TextData
+		c []storage.TextData
+	}
+	tests := []struct {
+		name string
+		args args
+		want []storage.TextData
+	}{
+		{name: "1", args: args{s: []storage.TextData{1: {ID: 1, Text: "1111"}},
+			c: []storage.TextData{1: {ID: 1, Text: "1111"}, 2: {ID: 2, Text: "2222"}}},
+			want: []storage.TextData{0: {ID: 2, Text: "2222"}}},
+		{name: "2", args: args{s: []storage.TextData{1: {ID: 1, Text: "1111"}},
+			c: []storage.TextData{1: {ID: 1, Text: "1111"}}},
+			want: nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := compareUnorderedTextSlices(tt.args.s, tt.args.c); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("compareUnorderedTextSlices() = %v, want %v", got, tt.want)
 			}
 		})
 	}

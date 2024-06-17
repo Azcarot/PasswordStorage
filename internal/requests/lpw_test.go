@@ -3,6 +3,7 @@ package requests
 import (
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 
 	mock_storage "github.com/Azcarot/PasswordStorage/internal/mock"
@@ -167,6 +168,57 @@ func TestSyncLPWReq(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("SyncLPWReq() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_lpwSliceToMap(t *testing.T) {
+	type args struct {
+		slice []storage.LoginData
+	}
+	tests := []struct {
+		name  string
+		args  args
+		want  map[int]storage.LoginData
+		want1 map[int]int
+	}{
+		{name: "11", args: args{slice: []storage.LoginData{{ID: 1, Login: "1111"}}}, want: map[int]storage.LoginData{1: {ID: 1, Login: "1111"}}, want1: map[int]int{1: 1}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, got1 := lpwSliceToMap(tt.args.slice)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("lpwSliceToMap() got = %v, want %v", got, tt.want)
+			}
+			if !reflect.DeepEqual(got1, tt.want1) {
+				t.Errorf("lpwSliceToMap() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
+}
+
+func Test_compareUnorderedLPWSlices(t *testing.T) {
+	type args struct {
+		s []storage.LoginData
+		c []storage.LoginData
+	}
+	tests := []struct {
+		name string
+		args args
+		want []storage.LoginData
+	}{
+		{name: "1", args: args{s: []storage.LoginData{1: {ID: 1, Login: "1111"}},
+			c: []storage.LoginData{1: {ID: 1, Login: "1111"}, 2: {ID: 2, Login: "2222"}}},
+			want: []storage.LoginData{0: {ID: 2, Login: "2222"}}},
+		{name: "2", args: args{s: []storage.LoginData{1: {ID: 1, Login: "1111"}},
+			c: []storage.LoginData{1: {ID: 1, Login: "1111"}}},
+			want: nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := compareUnorderedLPWSlices(tt.args.s, tt.args.c); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("compareUnorderedLPWSlices() = %v, want %v", got, tt.want)
 			}
 		})
 	}
