@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"strings"
 )
 
 // CreateNewRecord - создание новой записи с данными типа логин/пароль на сервере
@@ -79,49 +78,6 @@ func (store *TextStorage) DeleteRecord(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-// SearchRecord - поиск текстовых данных на сервере по строке
-func (store *TextStorage) SearchRecord(ctx context.Context) (any, error) {
-	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
-
-	if !ok {
-		return nil, ErrNoLogin
-	}
-	result := []TextData{}
-
-	query := `SELECT text, comment
-	FROM text_data
-	WHERE username = $1 
-	ORDER BY id DESC`
-
-	rows, err := store.DB.Query(ctx, query, dataLogin)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var resp TextData
-		myMap := make(map[string]string)
-		if err := rows.Scan(&store.Data.Text, &store.Data.Comment); err != nil {
-			return result, err
-		}
-
-		myMap["Text"] = store.Data.Text
-		myMap["Comment"] = store.Data.Comment
-		for _, value := range myMap {
-			if strings.Contains(strings.ToLower(value), strings.ToLower(store.Data.Str)) {
-				resp.Text = myMap["Text"]
-				resp.Comment = myMap["Comment"]
-				result = append(result, resp)
-			}
-		}
-
-	}
-	if err = rows.Err(); err != nil {
-		return result, err
-	}
-	return result, nil
 }
 
 // GetAllRecords - получение всех текстовых данных пользователя на сервере

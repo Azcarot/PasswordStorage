@@ -19,7 +19,7 @@ func main() {
 	}
 	err := storage.NewConn(flag)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	storage.PgxConn.CreateTablesForGoKeeper(storage.ST)
 	defer storage.DB.Close(context.Background())

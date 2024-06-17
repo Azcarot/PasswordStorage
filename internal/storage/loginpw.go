@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"strings"
 )
 
 // CreateNewRecord - создание новой записи с данными типа логин/пароль на сервере
@@ -80,52 +79,6 @@ func (store *LoginPwStorage) DeleteRecord(ctx context.Context) error {
 		return err
 	}
 	return nil
-}
-
-// SearchRecord - поиск данных типа логин/пароль на сервере по строке
-func (store *LoginPwStorage) SearchRecord(ctx context.Context) (any, error) {
-	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
-
-	if !ok {
-		return nil, ErrNoLogin
-	}
-
-	result := []LoginData{}
-
-	query := `SELECT login, pw, comment
-	FROM login_pw 
-	WHERE username = $1 
-	ORDER BY id DESC`
-
-	rows, err := store.DB.Query(ctx, query, dataLogin)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var resp LoginData
-		myMap := make(map[string]string)
-		if err := rows.Scan(&store.Data.Login, &store.Data.Password, &store.Data.Comment); err != nil {
-			return result, err
-		}
-
-		myMap["Login"] = store.Data.Login
-		myMap["Password"] = store.Data.Password
-		myMap["Comment"] = store.Data.Comment
-		for _, value := range myMap {
-			if strings.Contains(strings.ToLower(value), strings.ToLower(store.Data.Str)) {
-				resp.Login = myMap["Login"]
-				resp.Password = myMap["Password"]
-				resp.Comment = myMap["Comment"]
-				result = append(result, resp)
-			}
-		}
-
-	}
-	if err = rows.Err(); err != nil {
-		return result, err
-	}
-	return result, nil
 }
 
 // GetAllRecords - получение всех данных типа логин/пароль пользователя на сервере

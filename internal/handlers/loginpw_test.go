@@ -1,5 +1,3 @@
-// Package handlers - все обработчики запросов на сервере
-
 package handlers
 
 import (
@@ -19,14 +17,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAddNewCard(t *testing.T) {
+func TestAddNewLPW(t *testing.T) {
 	tests := []struct {
 		name     string
 		login    string
 		want     bool
 		wantErr  bool
 		resp     int
-		respData storage.BankCardData
+		respData storage.LoginData
 	}{
 		{name: "withErr",
 			resp: http.StatusInternalServerError,
@@ -36,12 +34,10 @@ func TestAddNewCard(t *testing.T) {
 			want: false, wantErr: true},
 		{name: "WithData", login: "login",
 			resp: http.StatusAccepted,
-			respData: storage.BankCardData{
-				CardNumber: "1234567890123456",
-				Cvc:        "123",
-				ExpDate:    "12/24",
-				FullName:   "John Doe",
-				Comment:    "Test Card",
+			respData: storage.LoginData{
+				Login:    "Name",
+				Password: "Password",
+				Comment:  "Data",
 			},
 			want: true, wantErr: false},
 		{name: "Unprocess", login: "login",
@@ -50,31 +46,21 @@ func TestAddNewCard(t *testing.T) {
 		{name: "CreateErr", login: "login",
 			resp: http.StatusUnprocessableEntity,
 			want: true, wantErr: false},
-		{name: "UnmErr", login: "login",
-			resp: http.StatusInternalServerError,
-			want: true, wantErr: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mock := mock_storage.NewMockPgxStorage(ctrl)
-			storage.BCST = mock
+			storage.LPST = mock
 
-			var body []byte
-			var err error
-			if tt.name == "UnmErr" {
-				body, err = json.Marshal("Something")
-			} else {
-				body, err = json.Marshal(tt.respData)
-			}
+			body, err := json.Marshal(tt.respData)
 			assert.NoError(t, err)
 
-			req := httptest.NewRequest(http.MethodPost, storage.ServURL+"/card/add", bytes.NewBuffer(body))
+			req := httptest.NewRequest(http.MethodPost, storage.ServURL+"/lpw/add", bytes.NewBuffer(body))
 			ctx := req.Context()
 			if len(tt.login) != 0 {
 				switch tt.name {
-				case "UnmErr":
 				case "CreateErr":
 					mock.EXPECT().AddData(gomock.Any()).Times(1)
 					mock.EXPECT().CreateNewRecord(gomock.Any()).Times(1).Return(fmt.Errorf("error"))
@@ -91,7 +77,7 @@ func TestAddNewCard(t *testing.T) {
 
 			res := httptest.NewRecorder()
 
-			AddNewCard(res, req)
+			AddNewLoginPw(res, req)
 
 			assert.Equal(t, tt.resp, res.Code)
 
@@ -99,26 +85,24 @@ func TestAddNewCard(t *testing.T) {
 	}
 }
 
-func TestGetBankCard(t *testing.T) {
+func TestGetLPW(t *testing.T) {
 	tests := []struct {
 		name     string
 		login    string
 		want     bool
 		wantErr  bool
 		resp     int
-		respData storage.BankCardData
+		respData storage.LoginData
 	}{
 		{name: "withErr",
 			resp: http.StatusInternalServerError,
 			want: false, wantErr: true},
 		{name: "WithData", login: "login",
 			resp: http.StatusOK,
-			respData: storage.BankCardData{
-				CardNumber: "1234567890123456",
-				Cvc:        "123",
-				ExpDate:    "12/24",
-				FullName:   "John Doe",
-				Comment:    "Test Card",
+			respData: storage.LoginData{
+				Login:    "Name",
+				Password: "Password",
+				Comment:  "Data",
 			},
 			want: true, wantErr: false},
 		{name: "Unprocess", login: "login",
@@ -130,7 +114,7 @@ func TestGetBankCard(t *testing.T) {
 		{name: "PGerr", login: "login",
 			resp: http.StatusInternalServerError,
 			want: true, wantErr: false},
-		{name: "UnmErr", login: "login",
+		{name: "Format", login: "login",
 			resp: http.StatusInternalServerError,
 			want: true, wantErr: false},
 	}
@@ -139,30 +123,26 @@ func TestGetBankCard(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mock := mock_storage.NewMockPgxStorage(ctrl)
-			storage.BCST = mock
-			var body []byte
-			var err error
-			if tt.name == "UnmErr" {
-				body, err = json.Marshal("Something")
-			} else {
-				body, err = json.Marshal(tt.respData)
-			}
-			assert.NoError(t, err)
-			cypher.CypherBankData(context.Background(), &tt.respData)
+			storage.LPST = mock
 
-			req := httptest.NewRequest(http.MethodPost, storage.ServURL+"/card/get", bytes.NewBuffer(body))
+			body, err := json.Marshal(tt.respData)
+			assert.NoError(t, err)
+			cypher.CypherLPWData(context.Background(), &tt.respData)
+
+			req := httptest.NewRequest(http.MethodPost, storage.ServURL+"/lpw/get", bytes.NewBuffer(body))
 			ctx := req.Context()
 			if len(tt.login) != 0 {
 				switch tt.name {
-				case "UnmErr":
-
 				case "GetErr":
 					mock.EXPECT().AddData(gomock.Any()).Times(1)
-					mock.EXPECT().GetRecord(gomock.Any()).Times(1).Return(storage.BankCardData{}, pgx.ErrNoRows)
+					mock.EXPECT().GetRecord(gomock.Any()).Times(1).Return(storage.LoginData{}, pgx.ErrNoRows)
 				case "PGerr":
 					mock.EXPECT().AddData(gomock.Any()).Times(1)
-					mock.EXPECT().GetRecord(gomock.Any()).Times(1).Return(storage.BankCardData{}, fmt.Errorf("err"))
+					mock.EXPECT().GetRecord(gomock.Any()).Times(1).Return(storage.LoginData{}, fmt.Errorf("err"))
 
+				case "Format":
+					mock.EXPECT().AddData(gomock.Any()).Times(1)
+					mock.EXPECT().GetRecord(gomock.Any()).Times(1).Return([]storage.LoginData{}, nil)
 				case "Unprocess":
 					mock.EXPECT().AddData(gomock.Any()).Times(1).Return(fmt.Errorf("error"))
 				default:
@@ -178,7 +158,7 @@ func TestGetBankCard(t *testing.T) {
 
 			res := httptest.NewRecorder()
 
-			GetBankCard(res, req)
+			GetLoginPW(res, req)
 
 			assert.Equal(t, tt.resp, res.Code)
 
@@ -186,46 +166,40 @@ func TestGetBankCard(t *testing.T) {
 	}
 }
 
-func TestUpdateBankCard(t *testing.T) {
+func TestUpdateLPW(t *testing.T) {
 	tests := []struct {
 		name     string
 		login    string
 		want     bool
 		wantErr  bool
 		resp     int
-		respData storage.BankCardData
+		respData storage.LoginData
 	}{
 		{name: "withErr",
 			resp: http.StatusInternalServerError,
 			want: false, wantErr: true},
 		{name: "WithData", login: "login",
 			resp: http.StatusAccepted,
-			respData: storage.BankCardData{
-				CardNumber: "1234567890123456",
-				Cvc:        "123",
-				ExpDate:    "12/24",
-				FullName:   "John Doe",
-				Comment:    "Test Card",
+			respData: storage.LoginData{
+				Login:    "Name",
+				Password: "Password",
+				Comment:  "Data",
 			},
 			want: true, wantErr: false},
 		{name: "WithData2", login: "login",
 			resp: http.StatusUnprocessableEntity,
-			respData: storage.BankCardData{
-				CardNumber: "",
-				Cvc:        "",
-				ExpDate:    "",
-				FullName:   "",
-				Comment:    "",
+			respData: storage.LoginData{
+				Login:    "",
+				Password: "",
+				Comment:  "",
 			},
 			want: true, wantErr: false},
 		{name: "WithData3", login: "login",
 			resp: http.StatusInternalServerError,
-			respData: storage.BankCardData{
-				CardNumber: "",
-				Cvc:        "",
-				ExpDate:    "",
-				FullName:   "",
-				Comment:    "",
+			respData: storage.LoginData{
+				Login:    "",
+				Password: "",
+				Comment:  "",
 			},
 			want: true, wantErr: false},
 		{name: "Unprocess", login: "login",
@@ -234,8 +208,8 @@ func TestUpdateBankCard(t *testing.T) {
 		{name: "GetErr", login: "login",
 			resp: http.StatusUnprocessableEntity,
 			want: true, wantErr: false},
-		{name: "UnmErr", login: "login",
-			resp: http.StatusInternalServerError,
+		{name: "Format", login: "login",
+			resp: http.StatusAccepted,
 			want: true, wantErr: false},
 	}
 	for _, tt := range tests {
@@ -243,32 +217,29 @@ func TestUpdateBankCard(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mock := mock_storage.NewMockPgxStorage(ctrl)
-			storage.BCST = mock
-			var body []byte
-			var err error
-			if tt.name == "UnmErr" {
-				body, err = json.Marshal("Something")
-			} else {
-				body, err = json.Marshal(tt.respData)
-			}
-			assert.NoError(t, err)
-			cypher.CypherBankData(context.Background(), &tt.respData)
+			storage.LPST = mock
 
-			req := httptest.NewRequest(http.MethodPost, storage.ServURL+"/card/get", bytes.NewBuffer(body))
+			body, err := json.Marshal(tt.respData)
+			assert.NoError(t, err)
+			cypher.CypherLPWData(context.Background(), &tt.respData)
+
+			req := httptest.NewRequest(http.MethodPost, storage.ServURL+"/lpw/get", bytes.NewBuffer(body))
 			ctx := req.Context()
 			if len(tt.login) != 0 {
 				switch tt.name {
-				case "UnmErr":
-
 				case "GetErr":
 					mock.EXPECT().AddData(gomock.Any()).Times(1)
-					mock.EXPECT().GetRecord(gomock.Any()).Times(1).Return(storage.BankCardData{}, pgx.ErrNoRows)
+					mock.EXPECT().GetRecord(gomock.Any()).Times(1).Return(storage.LoginData{}, pgx.ErrNoRows)
 				case "Unprocess":
 					mock.EXPECT().AddData(gomock.Any()).Times(1).Return(fmt.Errorf("error"))
 				case "WithData2":
 					mock.EXPECT().AddData(gomock.Any()).Times(1)
 					mock.EXPECT().GetRecord(gomock.Any()).Times(1).Return(tt.respData, nil)
 					mock.EXPECT().AddData(gomock.Any()).Times(1).Return(fmt.Errorf("error"))
+				case "Format":
+					mock.EXPECT().AddData(gomock.Any()).Times(1)
+					mock.EXPECT().GetRecord(gomock.Any()).Times(1).Return([]storage.LoginData{}, nil)
+					mock.EXPECT().UpdateRecord(gomock.Any()).Times(1).Return(nil)
 				case "WithData3":
 					mock.EXPECT().AddData(gomock.Any()).Times(1)
 					mock.EXPECT().GetRecord(gomock.Any()).Times(1).Return(tt.respData, nil)
@@ -288,7 +259,7 @@ func TestUpdateBankCard(t *testing.T) {
 
 			res := httptest.NewRecorder()
 
-			UpdateCard(res, req)
+			UpdateLoginPW(res, req)
 
 			assert.Equal(t, tt.resp, res.Code)
 
@@ -296,26 +267,24 @@ func TestUpdateBankCard(t *testing.T) {
 	}
 }
 
-func TestDeleteBankCard(t *testing.T) {
+func TestDeleteLPW(t *testing.T) {
 	tests := []struct {
 		name     string
 		login    string
 		want     bool
 		wantErr  bool
 		resp     int
-		respData storage.BankCardData
+		respData storage.LoginData
 	}{
 		{name: "withErr",
 			resp: http.StatusInternalServerError,
 			want: false, wantErr: true},
 		{name: "WithData", login: "login",
 			resp: http.StatusOK,
-			respData: storage.BankCardData{
-				CardNumber: "1234567890123456",
-				Cvc:        "123",
-				ExpDate:    "12/24",
-				FullName:   "John Doe",
-				Comment:    "Test Card",
+			respData: storage.LoginData{
+				Login:    "Name",
+				Password: "Password",
+				Comment:  "Data",
 			},
 			want: true, wantErr: false},
 		{name: "Unprocess", login: "login",
@@ -324,33 +293,22 @@ func TestDeleteBankCard(t *testing.T) {
 		{name: "GetErr", login: "login",
 			resp: http.StatusInternalServerError,
 			want: true, wantErr: false},
-		{name: "UnmErr", login: "login",
-			resp: http.StatusInternalServerError,
-			want: true, wantErr: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mock := mock_storage.NewMockPgxStorage(ctrl)
-			storage.BCST = mock
+			storage.LPST = mock
 
-			var body []byte
-			var err error
-			if tt.name == "UnmErr" {
-				body, err = json.Marshal("Something")
-			} else {
-				body, err = json.Marshal(tt.respData)
-			}
+			body, err := json.Marshal(tt.respData)
 			assert.NoError(t, err)
-			cypher.CypherBankData(context.Background(), &tt.respData)
+			cypher.CypherLPWData(context.Background(), &tt.respData)
 
-			req := httptest.NewRequest(http.MethodPost, storage.ServURL+"/card/get", bytes.NewBuffer(body))
+			req := httptest.NewRequest(http.MethodPost, storage.ServURL+"/lpw/get", bytes.NewBuffer(body))
 			ctx := req.Context()
 			if len(tt.login) != 0 {
 				switch tt.name {
-				case "UnmErr":
-
 				case "GetErr":
 					mock.EXPECT().AddData(gomock.Any()).Times(1)
 					mock.EXPECT().DeleteRecord(gomock.Any()).Times(1).Return(fmt.Errorf("error"))
@@ -369,7 +327,7 @@ func TestDeleteBankCard(t *testing.T) {
 
 			res := httptest.NewRecorder()
 
-			DeleteCard(res, req)
+			DeleteLoginPW(res, req)
 
 			assert.Equal(t, tt.resp, res.Code)
 
@@ -377,26 +335,24 @@ func TestDeleteBankCard(t *testing.T) {
 	}
 }
 
-func TestGetAllBankCards(t *testing.T) {
+func TestGetAllLPW(t *testing.T) {
 	tests := []struct {
 		name     string
 		login    string
 		want     bool
 		wantErr  bool
 		resp     int
-		respData storage.BankCardData
+		respData storage.LoginData
 	}{
 		{name: "withErr",
 			resp: http.StatusInternalServerError,
 			want: false, wantErr: true},
 		{name: "WithData", login: "login",
 			resp: http.StatusOK,
-			respData: storage.BankCardData{
-				CardNumber: "1234567890123456",
-				Cvc:        "123",
-				ExpDate:    "12/24",
-				FullName:   "John Doe",
-				Comment:    "Test Card",
+			respData: storage.LoginData{
+				Login:    "Name",
+				Password: "Password",
+				Comment:  "Data",
 			},
 			want: true, wantErr: false},
 
@@ -409,12 +365,10 @@ func TestGetAllBankCards(t *testing.T) {
 
 		{name: "WithDataErr", login: "login",
 			resp: http.StatusInternalServerError,
-			respData: storage.BankCardData{
-				CardNumber: "1234567890123456",
-				Cvc:        "123",
-				ExpDate:    "12/24",
-				FullName:   "John Doe",
-				Comment:    "Test Card",
+			respData: storage.LoginData{
+				Login:    "Name",
+				Password: "Password",
+				Comment:  "Data",
 			},
 			want: true, wantErr: false},
 	}
@@ -423,27 +377,27 @@ func TestGetAllBankCards(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mock := mock_storage.NewMockPgxStorage(ctrl)
-			storage.BCST = mock
+			storage.LPST = mock
 
 			body, err := json.Marshal(tt.respData)
 			assert.NoError(t, err)
-			cypher.CypherBankData(context.Background(), &tt.respData)
+			cypher.CypherLPWData(context.Background(), &tt.respData)
 
-			req := httptest.NewRequest(http.MethodPost, storage.ServURL+"/card/get", bytes.NewBuffer(body))
+			req := httptest.NewRequest(http.MethodPost, storage.ServURL+"/lpw/get", bytes.NewBuffer(body))
 			ctx := req.Context()
 			if len(tt.login) != 0 {
 				switch tt.name {
 				case "GetErr":
 
-					mock.EXPECT().GetAllRecords(gomock.Any()).Times(1).Return(storage.BankCardData{}, pgx.ErrNoRows)
+					mock.EXPECT().GetAllRecords(gomock.Any()).Times(1).Return(storage.LoginData{}, pgx.ErrNoRows)
 				case "GetErr2":
 
-					mock.EXPECT().GetAllRecords(gomock.Any()).Times(1).Return(storage.BankCardData{}, fmt.Errorf("error"))
+					mock.EXPECT().GetAllRecords(gomock.Any()).Times(1).Return(storage.LoginData{}, fmt.Errorf("error"))
 				case "WithDataErr":
 
-					mock.EXPECT().GetAllRecords(gomock.Any()).Times(1).Return(storage.BankCardData{}, nil)
+					mock.EXPECT().GetAllRecords(gomock.Any()).Times(1).Return(storage.LoginData{}, nil)
 				default:
-					mock.EXPECT().GetAllRecords(gomock.Any()).Times(1).Return([]storage.BankCardData{}, nil)
+					mock.EXPECT().GetAllRecords(gomock.Any()).Times(1).Return([]storage.LoginData{}, nil)
 
 				}
 
@@ -454,7 +408,7 @@ func TestGetAllBankCards(t *testing.T) {
 
 			res := httptest.NewRecorder()
 
-			GetAllBankCards(res, req)
+			GetAllLoginPWs(res, req)
 
 			assert.Equal(t, tt.resp, res.Code)
 

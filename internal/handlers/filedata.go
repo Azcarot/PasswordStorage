@@ -238,63 +238,6 @@ func DeleteFile(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusOK)
 }
 
-// SearchFile - ручка для поиска фйла по строке
-func SearchFile(res http.ResponseWriter, req *http.Request) {
-	ctx := req.Context()
-	_, ok := req.Context().Value(storage.UserLoginCtxKey).(string)
-	if !ok {
-		res.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	var reqData storage.FileData
-
-	data, err := io.ReadAll(req.Body)
-	if err != nil {
-		res.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	defer req.Body.Close()
-
-	if err = json.Unmarshal(data, &reqData); err != nil {
-		res.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	err = storage.FST.AddData(reqData)
-	if err != nil {
-		res.WriteHeader(http.StatusUnprocessableEntity)
-		return
-	}
-	fileData, err := storage.FST.SearchRecord(ctx)
-	if errors.Is(err, pgx.ErrNoRows) {
-		res.WriteHeader(http.StatusNoContent)
-		return
-	}
-	if err != nil {
-		res.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	cyphData, ok := fileData.(storage.FileData)
-	if !ok {
-		res.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	err = cypher.DeCypherFileData(ctx, &cyphData)
-	if err != nil {
-		res.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	result, err := json.Marshal(cyphData)
-	if err != nil {
-		res.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	res.Header().Add("Content-Type", "application/json")
-	res.WriteHeader(http.StatusOK)
-	res.Write(result)
-
-}
-
 // GetAllFiles - ручка для получения всех сохраненных файлов
 func GetAllFiles(res http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()

@@ -8,7 +8,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"strings"
 )
 
 // CreateNewRecord - создание новой записи для банковских карт в бд сервера
@@ -86,56 +85,6 @@ func (store *BankCardStorage) DeleteRecord(ctx context.Context) error {
 		return err
 	}
 	return nil
-}
-
-// SearchRecord - поиск записи для банковских карт в бд сервера по строке
-func (store *BankCardStorage) SearchRecord(ctx context.Context) (any, error) {
-	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
-
-	if !ok {
-		return nil, ErrNoLogin
-	}
-
-	result := []BankCardData{}
-
-	query := `SELECT card_number, cvc, exp_date, full_name, comment
-	FROM bank_card 
-	WHERE username = $1
-	ORDER BY id DESC`
-
-	rows, err := store.DB.Query(ctx, query, dataLogin)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var resp BankCardData
-		myMap := make(map[string]string)
-		if err := rows.Scan(&store.Data.CardNumber, &store.Data.Cvc, &store.Data.ExpDate, &store.Data.FullName, &store.Data.Comment); err != nil {
-			return result, err
-		}
-
-		myMap["CardNumber"] = store.Data.CardNumber
-		myMap["Cvc"] = store.Data.Cvc
-		myMap["ExpDate"] = store.Data.ExpDate
-		myMap["FullName"] = store.Data.FullName
-		myMap["Comment"] = store.Data.Comment
-		for _, value := range myMap {
-			if strings.Contains(strings.ToLower(value), strings.ToLower(store.Data.Str)) {
-				resp.CardNumber = myMap["CardNumber"]
-				resp.Cvc = myMap["Cvc"]
-				resp.Comment = myMap["Comment"]
-				resp.ExpDate = myMap["ExpDate"]
-				resp.FullName = myMap["FullName"]
-				result = append(result, resp)
-			}
-		}
-
-	}
-	if err = rows.Err(); err != nil {
-		return result, err
-	}
-	return result, nil
 }
 
 // GetAllRecords - получение всех запрошенных данных пользователя для банковских карт из бд сервера

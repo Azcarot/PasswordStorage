@@ -225,62 +225,6 @@ func DeleteText(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusOK)
 }
 
-// SearchText - ручка для поиска текстовой записи пользователя по строке
-func SearchText(res http.ResponseWriter, req *http.Request) {
-	ctx := req.Context()
-	_, ok := req.Context().Value(storage.UserLoginCtxKey).(string)
-	if !ok {
-		res.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	var reqData storage.TextData
-
-	data, err := io.ReadAll(req.Body)
-	if err != nil {
-		res.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	defer req.Body.Close()
-
-	if err = json.Unmarshal(data, &reqData); err != nil {
-		res.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	err = storage.TST.AddData(reqData)
-	if err != nil {
-		res.WriteHeader(http.StatusUnprocessableEntity)
-		return
-	}
-	textData, err := storage.TST.SearchRecord(ctx)
-	if errors.Is(err, pgx.ErrNoRows) {
-		res.WriteHeader(http.StatusNoContent)
-		return
-	}
-	if err != nil {
-		res.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	cyphData, ok := textData.(storage.TextData)
-	if !ok {
-		res.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	err = cypher.DeCypherTextData(ctx, &cyphData)
-	if err != nil {
-		res.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	result, err := json.Marshal(textData)
-	if err != nil {
-		res.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	res.Header().Add("Content-Type", "application/json")
-	res.WriteHeader(http.StatusOK)
-	res.Write(result)
-
-}
-
 // GetAllTexts - ручка для получения всех текстовых записей пользователя
 func GetAllTexts(res http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()

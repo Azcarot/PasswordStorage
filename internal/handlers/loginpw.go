@@ -229,53 +229,6 @@ func DeleteLoginPW(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusOK)
 }
 
-// Поиск записи типа логин/пароль по строке
-func SearchLoginPW(res http.ResponseWriter, req *http.Request) {
-	ctx := req.Context()
-	_, ok := req.Context().Value(storage.UserLoginCtxKey).(string)
-	if !ok {
-		res.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	var reqData storage.LoginData
-
-	data, err := io.ReadAll(req.Body)
-	if err != nil {
-		res.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	defer req.Body.Close()
-
-	if err = json.Unmarshal(data, &reqData); err != nil {
-		res.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	err = storage.LPST.AddData(reqData)
-	if err != nil {
-		res.WriteHeader(http.StatusUnprocessableEntity)
-		return
-	}
-	lpwData, err := storage.LPST.SearchRecord(ctx)
-	if errors.Is(err, pgx.ErrNoRows) {
-		res.WriteHeader(http.StatusNoContent)
-		return
-	}
-	if err != nil {
-		res.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	result, err := json.Marshal(lpwData)
-	if err != nil {
-		res.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	res.Header().Add("Content-Type", "application/json")
-	res.WriteHeader(http.StatusOK)
-	res.Write(result)
-
-}
-
 // GetAllLoginPWs - ручка получения всех данных типа логин/пароль для поьзователя
 func GetAllLoginPWs(res http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()

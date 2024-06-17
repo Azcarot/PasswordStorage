@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"strings"
 )
 
 // FileLiteStorage - хранилище файловых данных на клиенте
@@ -125,53 +124,6 @@ func (store *FileLiteStorage) DeleteRecord(ctx context.Context) error {
 		return err
 	}
 	return nil
-}
-
-// SearchRecord - поиск файловых данных на клиенте по строке
-func (store *FileLiteStorage) SearchRecord(ctx context.Context) (any, error) {
-	dataLogin, ok := ctx.Value(UserLoginCtxKey).(string)
-
-	if !ok {
-		return nil, ErrNoLogin
-	}
-	result := []FileData{}
-
-	query := `SELECT file_name, file_path, data, comment
-	FROM file_data
-	WHERE username = $1 
-	ORDER BY id DESC`
-
-	rows, err := store.DB.QueryContext(ctx, query, dataLogin)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var resp FileData
-		myMap := make(map[string]string)
-		if err := rows.Scan(&store.Data.FileName, &store.Data.Path, &store.Data.Data, &store.Data.Comment); err != nil {
-			return result, err
-		}
-
-		myMap["Filename"] = store.Data.FileName
-		myMap["Data"] = store.Data.Data
-		myMap["Comment"] = store.Data.Comment
-		myMap["Path"] = store.Data.Path
-		for _, value := range myMap {
-			if strings.Contains(strings.ToLower(value), strings.ToLower(store.Data.Str)) {
-				resp.FileName = myMap["Filename"]
-				resp.Data = myMap["Data"]
-				resp.Comment = myMap["Comment"]
-				resp.Path = myMap["Path"]
-				result = append(result, resp)
-			}
-		}
-
-	}
-	if err = rows.Err(); err != nil {
-		return result, err
-	}
-	return result, nil
 }
 
 // GetAllRecords - получение всех файловых данных пользователя на клиенте

@@ -98,7 +98,6 @@ type PgxStorage interface {
 	UpdateRecord(ctx context.Context) error
 	GetRecord(ctx context.Context) (any, error)
 	GetAllRecords(ctx context.Context) (any, error)
-	SearchRecord(ctx context.Context) (any, error)
 	DeleteRecord(ctx context.Context) error
 	HashDatabaseData(ctx context.Context) (string, error)
 	AddData(data any) error

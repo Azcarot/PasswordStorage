@@ -229,59 +229,6 @@ func DeleteCard(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusOK)
 }
 
-// SearchBankCard - ручка для поиска банковской карты по str
-func SearchBankCard(res http.ResponseWriter, req *http.Request) {
-	ctx := req.Context()
-	_, ok := req.Context().Value(storage.UserLoginCtxKey).(string)
-	if !ok {
-		res.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	var reqData storage.BankCardData
-
-	data, err := io.ReadAll(req.Body)
-	if err != nil {
-		res.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	defer req.Body.Close()
-
-	if err = json.Unmarshal(data, &reqData); err != nil {
-		res.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	err = storage.BCST.AddData(reqData)
-	if err != nil {
-		res.WriteHeader(http.StatusUnprocessableEntity)
-		return
-	}
-	cardData, err := storage.BCST.SearchRecord(ctx)
-	if errors.Is(err, pgx.ErrNoRows) {
-		res.WriteHeader(http.StatusNoContent)
-		return
-	}
-	if err != nil {
-		res.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	cypData := cardData.(storage.BankCardData)
-	err = cypher.DeCypherBankData(ctx, &cypData)
-	if err != nil {
-		res.WriteHeader(http.StatusUnprocessableEntity)
-		return
-	}
-
-	result, err := json.Marshal(cypData)
-	if err != nil {
-		res.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	res.Header().Add("Content-Type", "application/json")
-	res.WriteHeader(http.StatusOK)
-	res.Write(result)
-
-}
-
 // GetAllBankCards - ручка для получения полного списка сохраненных карт
 func GetAllBankCards(res http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
