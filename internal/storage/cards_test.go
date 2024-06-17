@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"reflect"
 	"testing"
 
 	"github.com/Azcarot/PasswordStorage/internal/cfg"
@@ -219,6 +220,37 @@ func TestNewConn(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := NewConn(tt.args.f); (err != nil) != tt.wantErr {
 				t.Errorf("NewConn() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestBankCardStorage_SearchRecord(t *testing.T) {
+	type args struct {
+		ctx   context.Context
+		login string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    any
+		wantErr bool
+	}{
+		{name: "No login", args: args{ctx: context.Background()}, want: nil, wantErr: true},
+		{name: "with login", args: args{ctx: context.Background(), login: "User"}, want: []BankCardData{}, wantErr: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if len(tt.args.login) != 0 {
+				tt.args.ctx = context.WithValue(context.Background(), UserLoginCtxKey, tt.args.login)
+			}
+			got, err := BCST.SearchRecord(tt.args.ctx)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("BankCardStorage.SearchRecord() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("BankCardStorage.SearchRecord() = %v, want %v", got, tt.want)
 			}
 		})
 	}

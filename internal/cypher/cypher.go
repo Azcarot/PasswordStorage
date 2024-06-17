@@ -59,7 +59,9 @@ func Dechypher(ctx context.Context, data string) (string, error) {
 	}
 
 	block, err := aes.NewCipher(storage.Secret[:])
-
+	if err != nil {
+		return "", err
+	}
 	if len(ciphertextBytes) < aes.BlockSize {
 		return "", fmt.Errorf("ciphertext слишком короткий")
 	}
