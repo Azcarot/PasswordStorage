@@ -158,7 +158,7 @@ func TestSyncCardReq(t *testing.T) {
 		{name: "WithData",
 			resp:     http.StatusAccepted,
 			respData: []storage.BankCardData{{ID: 1, CardNumber: "111", Cvc: "222", ExpDate: "333"}},
-			want:     false, wantErr: false},
+			want:     true, wantErr: false},
 		{name: "NoData2",
 			resp: http.StatusOK,
 			want: true, wantErr: false},
@@ -175,7 +175,11 @@ func TestSyncCardReq(t *testing.T) {
 				if len(tt.respData) != 0 {
 					mock.EXPECT().AddData(tt.respData[0]).Times(1)
 					mock.EXPECT().CreateNewRecord(gomock.Any()).Times(1)
-					mock.EXPECT().GetAllRecords(gomock.Any()).Times(1)
+					if !tt.wantErr {
+						mock.EXPECT().GetAllRecords(gomock.Any()).Times(1).Return(tt.respData, nil)
+					} else {
+						mock.EXPECT().GetAllRecords(gomock.Any()).Times(1)
+					}
 					data, _ := json.Marshal(tt.respData)
 					w.Write(data)
 				} else {
