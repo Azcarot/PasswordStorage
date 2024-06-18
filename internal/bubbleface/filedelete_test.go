@@ -1,4 +1,3 @@
-// Package face - модуль взаимодействия с клиентом посредством bubbletea
 package face
 
 import (
@@ -15,27 +14,27 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewCardDeleteModel(t *testing.T) {
+func TestNewFileDeleteModel(t *testing.T) {
 	tests := []struct {
 		name string
-		want cardDeleteModel
+		want fileDeleteModel
 	}{
-		{name: "typeerr", want: cardDeleteModel{
+		{name: "typeerr", want: fileDeleteModel{
 
 			choices: []string{},
 
 			selected: make(map[int]struct{}),
 		}},
-		{name: "geterr", want: cardDeleteModel{
+		{name: "geterr", want: fileDeleteModel{
 
 			choices: []string{},
 
 			selected: make(map[int]struct{}),
 		}},
-		{name: "noerr", want: cardDeleteModel{
+		{name: "noerr", want: fileDeleteModel{
 
 			choices: []string{},
-			datas:   []storage.BankCardData{},
+			datas:   []storage.FileData{},
 
 			selected: make(map[int]struct{}),
 		}},
@@ -44,56 +43,53 @@ func TestNewCardDeleteModel(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 		mock := mock_storage.NewMockPgxStorage(ctrl)
-		storage.BCLiteS = mock
+		storage.FLiteS = mock
 		switch tt.name {
 		case "geterr":
-			mock.EXPECT().GetAllRecords(gomock.Any()).Times(1).Return(cardDeleteModel{
+			mock.EXPECT().GetAllRecords(gomock.Any()).Times(1).Return(fileDeleteModel{
 
 				choices: []string{},
 
 				selected: make(map[int]struct{}),
 			}, fmt.Errorf("error"))
-
-		case "typeerr":
-			mock.EXPECT().GetAllRecords(gomock.Any()).Times(1)
 		default:
 			ctx := context.WithValue(context.Background(), storage.UserLoginCtxKey, storage.UserLoginPw.Login)
-			mock.EXPECT().GetAllRecords(gomock.Any()).Times(1).Return([]storage.BankCardData{}, nil)
-			choices, datas, err := deCypherBankCard(ctx, []storage.BankCardData{})
+			mock.EXPECT().GetAllRecords(gomock.Any()).Times(1).Return([]storage.FileData{}, nil)
+			choices, datas, err := deCypherFile(ctx, []storage.FileData{})
 			assert.NoError(t, err)
 			tt.want.choices = choices
 			tt.want.datas = datas
 		}
 
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewCardDeleteModel(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewCardDeleteModel() = %v, want %v", got, tt.want)
+			if got := NewFileDeleteModel(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("NewFileDeleteModel() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func Test_cardDeleteModel_Init(t *testing.T) {
+func Test_fileDeleteModel_Init(t *testing.T) {
 	tests := []struct {
 		name string
-		m    cardDeleteModel
+		m    fileDeleteModel
 		want tea.Cmd
 	}{
-		{name: "name", m: cardDeleteModel{}, want: nil},
+		{name: "name", m: fileDeleteModel{}, want: nil},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.m.Init(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("cardDeleteModel.Init() = %v, want %v", got, tt.want)
+				t.Errorf("fileDeleteModel.Init() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func Test_cardDeleteModel_View(t *testing.T) {
+func Test_fileDeleteModel_View(t *testing.T) {
 	var builder strings.Builder
 
-	builder.WriteString(cardDeleteHeader)
+	builder.WriteString(deleteFileHeader)
 	builder.WriteString("\n\n")
 
 	builder.WriteString("")
@@ -105,15 +101,15 @@ func Test_cardDeleteModel_View(t *testing.T) {
 	str := builder.String()
 	tests := []struct {
 		name string
-		m    cardDeleteModel
+		m    fileDeleteModel
 		want string
 	}{
-		{name: "name", m: cardDeleteModel{}, want: str},
+		{name: "name", m: fileDeleteModel{}, want: str},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.m.View(); got != tt.want {
-				t.Errorf("cardDeleteModel.View() = %v, want %v", got, tt.want)
+				t.Errorf("fileDeleteModel.View() = %v, want %v", got, tt.want)
 			}
 		})
 	}

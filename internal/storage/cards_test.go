@@ -16,6 +16,8 @@ import (
 	"github.com/Azcarot/PasswordStorage/internal/cfg"
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/assert"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func TestMain(m *testing.M) {
@@ -29,50 +31,63 @@ func TestMain(m *testing.M) {
 }
 
 func run(m *testing.M) (code int, err error) {
-	var f cfg.Flags
-	f.FlagDBAddr = "host='localhost' user='postgres' password='12345' sslmode=disable"
-	DB, err = pgx.Connect(context.Background(), f.FlagDBAddr)
-	if err != nil {
-		//handle the error
-		log.Fatal(err)
-	}
-	ST = MakeConn(DB)
-	dbName := "testdb"
 	ctx := context.Background()
-	_, err = DB.Exec(ctx, "DROP DATABASE IF EXISTS "+dbName)
-	if err != nil {
-		//handle the error
-		log.Fatal(err)
+
+	req := testcontainers.ContainerRequest{
+		Image:        "postgres:13",
+		ExposedPorts: []string{"5432/tcp"},
+		Env: map[string]string{
+			"POSTGRES_PASSWORD": "12345",
+			"POSTGRES_DB":       "testdb",
+		},
+		WaitingFor: wait.ForListeningPort("5432/tcp"),
 	}
-	_, err = DB.Exec(ctx, "create database "+dbName)
+	postgresC, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
 	if err != nil {
-		//handle the error
-		log.Fatal(err)
+		return -1, err
 	}
+	defer postgresC.Terminate(ctx)
+
+	host, err := postgresC.Host(ctx)
+	if err != nil {
+		return -1, err
+	}
+	port, err := postgresC.MappedPort(ctx, "5432")
+	if err != nil {
+		return -1, err
+	}
+
+	dsn := fmt.Sprintf("postgres://postgres:12345@%s:%s/testdb?sslmode=disable", host, port.Port())
+	DB, err = pgx.Connect(ctx, dsn)
+	if err != nil {
+		return -1, err
+	}
+	defer DB.Close(ctx)
+
+	ST = MakeConn(DB)
+
 	ST.CreateTablesForGoKeeper()
-	_, err = os.Stat("test.db")
+
+	sqliteFile := "test.db"
+	_, err = os.Stat(sqliteFile)
 	if err == nil {
-		err = os.Remove("test.db")
+		err = os.Remove(sqliteFile)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
+
 	LiteDB, err = sql.Open("sqlite", "test.db")
+	defer func() {
+		LiteDB.Close()
+		os.Remove(sqliteFile)
+	}()
+
 	LiteST = MakeLiteConn(LiteDB)
 	LiteST.CreateTablesForGoKeeper()
-
-	// truncates all test data after the tests are run
-	defer func() {
-
-		_, _ = DB.Exec(ctx, fmt.Sprintf("DELETE FROM %s", "bank_card"))
-		_, _ = DB.Exec(ctx, fmt.Sprintf("DELETE FROM %s", "file_data"))
-		_, _ = DB.Exec(ctx, fmt.Sprintf("DELETE FROM %s", "text_data"))
-		_, _ = DB.Exec(ctx, fmt.Sprintf("DELETE FROM %s", "login_pw"))
-		LiteDB.Close()
-		os.Remove("test.db")
-
-		DB.Close(ctx)
-	}()
 	BCST = NewBCStorage(BCST, DB)
 	BCLiteS = NewBCLiteStorage(BCLiteS, LiteDB)
 	FST = NewFSTtorage(FST, DB)
@@ -81,7 +96,14 @@ func run(m *testing.M) (code int, err error) {
 	LPWLiteS = NewLPLiteStorage(LPWLiteS, LiteDB)
 	TST = NewTSTtorage(TST, DB)
 	TLiteS = NewTLiteStorage(TLiteS, LiteDB)
-	return m.Run(), nil
+	code = m.Run()
+
+	_, _ = DB.Exec(ctx, "DELETE FROM bank_card")
+	_, _ = DB.Exec(ctx, "DELETE FROM file_data")
+	_, _ = DB.Exec(ctx, "DELETE FROM text_data")
+	_, _ = DB.Exec(ctx, "DELETE FROM login_pw")
+
+	return code, nil
 }
 
 func TestCardSQL_CreateNewRecord(t *testing.T) {
