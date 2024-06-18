@@ -1,10 +1,12 @@
 package face
 
 import (
+	"fmt"
 	"testing"
 
 	mock_storage "github.com/Azcarot/PasswordStorage/internal/mock"
 	"github.com/Azcarot/PasswordStorage/internal/storage"
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -69,4 +71,61 @@ func TestTextUpdateModel_Update(t *testing.T) {
 	msg = tea.KeyMsg{Type: tea.KeyShiftTab}
 	newModel, _ = model.Update(msg)
 	assert.Equal(t, 1, newModel.(textUpdateModel).focused, "Expected focus to be on the first input")
+}
+
+func TestTextUpdateModel_View(t *testing.T) {
+	m := NewUpdateTextModel()
+	// Create text inputs
+	inputs := make([]textinput.Model, 2)
+	inputs[txt] = textinput.New()
+	inputs[txt].Placeholder = "Some text **************"
+	inputs[txt].Focus()
+	inputs[txt].CharLimit = 100
+	inputs[txt].Width = 30
+	inputs[txt].Prompt = ""
+	inputs[txt].SetValue(selectedText.Text)
+
+	inputs[tcmt] = textinput.New()
+	inputs[tcmt].Placeholder = "Some comment"
+	inputs[tcmt].CharLimit = 100
+	inputs[tcmt].Width = 40
+	inputs[tcmt].Prompt = ""
+	inputs[tcmt].SetValue(selectedText.Comment)
+
+	// Initialize model
+	model := textUpdateModel{
+		inputs:  inputs,
+		focused: 0,
+		err:     nil,
+	}
+
+	// Expected output
+	expectedOutput := fmt.Sprintf(
+		` %s
+
+ %s
+ %s
+
+
+ %s  
+ %s
+
+ %s
+
+
+ press ctrl+B to go to previous menu
+`,
+		textUpdateHeader,
+		inputStyle.Width(30).Render("Your Text"),
+		m.inputs[txt].View(),
+		inputStyle.Width(30).Render("Comment"),
+		m.inputs[tcmt].View(),
+		continueStyle.Render("Continue ->"),
+	) + "\n"
+
+	// Call the View method
+	output := model.View()
+
+	// Assert the output
+	assert.Equal(t, expectedOutput, output)
 }
