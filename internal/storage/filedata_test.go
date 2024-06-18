@@ -6,8 +6,11 @@ package storage
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestFileSQL_CreateNewRecord(t *testing.T) {
@@ -145,10 +148,18 @@ func TestFileStorage_GetRecord(t *testing.T) {
 		{name: "no login", args: args{ctx: context.Background()}, want: nil, wantErr: true},
 		{name: "with login, no rows", args: args{ctx: context.WithValue(context.Background(), UserLoginCtxKey, "User")}, want: FileData{}, wantErr: true},
 		{name: "data", args: args{ctx: context.WithValue(context.Background(), UserLoginCtxKey, "User"), data: FileData{ID: 1, FileName: "1111"}}, want: FileData{}, wantErr: true},
+		{name: "data2", args: args{ctx: context.WithValue(context.Background(), UserLoginCtxKey, "User"), data: FileData{ID: 1, FileName: "1111"}}, want: FileData{ID: 0, FileName: "1111"}, wantErr: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
+			if tt.name == "data2" {
+				_, _ = DB.Exec(tt.args.ctx, fmt.Sprintf("DELETE FROM %s", "bank_card"))
+				ST.CreateTablesForGoKeeper()
+				err := FST.AddData(tt.args.data)
+				assert.NoError(t, err)
+				err = FST.CreateNewRecord(tt.args.ctx)
+				assert.NoError(t, err)
+			}
 			got, err := FST.GetRecord(tt.args.ctx)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("FileStorage.GetRecord() error = %v, wantErr %v", err, tt.wantErr)
@@ -172,7 +183,7 @@ func TestFileStorage_HashDatabaseData(t *testing.T) {
 		wantErr bool
 	}{
 		{name: "1", args: args{ctx: context.Background()}, want: "", wantErr: true},
-		{name: "2", args: args{ctx: context.WithValue(context.Background(), UserLoginCtxKey, "User")}, want: "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945", wantErr: false},
+		{name: "2", args: args{ctx: context.WithValue(context.Background(), UserLoginCtxKey, "User")}, want: "58bd7bd63b18cda75e8ede6f2842699f5eca3f2bfec5b0bcbefc06f3e794b448", wantErr: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

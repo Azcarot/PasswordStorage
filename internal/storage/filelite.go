@@ -26,12 +26,7 @@ func (store *FileLiteStorage) CreateNewRecord(ctx context.Context) error {
 		return ErrNoLogin
 	}
 
-	tx, err := store.DB.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-
-	_, err = store.DB.ExecContext(ctx, `INSERT INTO file_data 
+	_, err := store.DB.ExecContext(ctx, `INSERT INTO file_data 
 	(id, file_name, file_path, data, comment, username, created) 
 	values ($1, $2, $3, $4, $5, $6, $7)
 	ON CONFLICT(id) DO UPDATE SET
@@ -43,13 +38,8 @@ func (store *FileLiteStorage) CreateNewRecord(ctx context.Context) error {
 	username = excluded.username,
 	created = excluded.created;`,
 		store.Data.ID, store.Data.FileName, store.Data.Path, store.Data.Data, store.Data.Comment, dataLogin, store.Data.Date)
+
 	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	err = tx.Commit()
-	if err != nil {
-		tx.Rollback()
 		return err
 	}
 	return nil
@@ -83,44 +73,27 @@ func (store *FileLiteStorage) GetRecord(ctx context.Context) (any, error) {
 
 // UpdateRecord - обновление файловых данных на клиенте по id
 func (store *FileLiteStorage) UpdateRecord(ctx context.Context) error {
-	tx, err := store.DB.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
 
 	query := `UPDATE file_data SET
 	file_name = $1, file_path =$2, data = $3, comment = $4, created = $5
 	WHERE id = $6`
-	_, err = store.DB.ExecContext(ctx, query,
+	_, err := store.DB.ExecContext(ctx, query,
 		store.Data.FileName, store.Data.Path, store.Data.Data, store.Data.Comment, store.Data.Date, store.Data.ID)
 	if err != nil {
-		tx.Rollback()
 		return err
 	}
-	err = tx.Commit()
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
+
 	return nil
 }
 
 // DeleteRecord - удаление фаловых данных с клиента по id
 func (store *FileLiteStorage) DeleteRecord(ctx context.Context) error {
-	tx, err := store.DB.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
+
 	query := `DELETE FROM file_data
 	WHERE id = $1`
-	_, err = store.DB.ExecContext(ctx, query, store.Data.ID)
+	_, err := store.DB.ExecContext(ctx, query, store.Data.ID)
+
 	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	err = tx.Commit()
-	if err != nil {
-		tx.Rollback()
 		return err
 	}
 	return nil

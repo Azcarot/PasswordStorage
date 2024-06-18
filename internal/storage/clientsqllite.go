@@ -247,24 +247,15 @@ func (store SQLLiteStore) CreateNewUser(ctx context.Context, data RegisterReques
 
 	mut.Lock()
 	defer mut.Unlock()
-	tx, err := store.DB.BeginTx(ctx, nil)
-	if err != nil {
 
-		return err
-	}
 	newKey := GenerateSecretKey(data)
 	date := time.Now().Format(time.RFC3339)
-	_, err = store.DB.ExecContext(ctx, `INSERT into users (login, password, secret, created) 
+	_, err := store.DB.ExecContext(ctx, `INSERT into users (login, password, secret, created) 
 	values ($1, $2, $3, $4);`,
 		data.Login, data.Password, newKey, date)
 
 	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	err = tx.Commit()
-	if err != nil {
-		tx.Rollback()
+
 		return err
 	}
 	return err

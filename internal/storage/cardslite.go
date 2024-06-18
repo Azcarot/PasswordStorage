@@ -26,12 +26,7 @@ func (store *BankCardLiteStorage) CreateNewRecord(ctx context.Context) error {
 		return ErrNoLogin
 	}
 
-	tx, err := store.DB.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-
-	_, err = store.DB.ExecContext(ctx, `INSERT INTO bank_card 
+	_, err := store.DB.ExecContext(ctx, `INSERT INTO bank_card 
 	(id, card_number, cvc, exp_date, full_name, comment, username, created) 
 	values ($1, $2, $3, $4, $5, $6, $7, $8)
 	ON CONFLICT(id) DO UPDATE SET
@@ -44,13 +39,8 @@ func (store *BankCardLiteStorage) CreateNewRecord(ctx context.Context) error {
 	username = excluded.username,
 	created = excluded.created;`,
 		store.Data.ID, store.Data.CardNumber, store.Data.Cvc, store.Data.ExpDate, store.Data.FullName, store.Data.Comment, dataLogin, store.Data.Date)
+
 	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	err = tx.Commit()
-	if err != nil {
-		tx.Rollback()
 		return err
 	}
 	return nil
@@ -86,23 +76,15 @@ func (store *BankCardLiteStorage) GetRecord(ctx context.Context) (any, error) {
 
 // UpdateRecord - обновление банковской карты в бд клиента по id
 func (store *BankCardLiteStorage) UpdateRecord(ctx context.Context) error {
-	tx, err := store.DB.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
 
 	query := `UPDATE bank_card SET
 	card_number = $1, cvc = $2 , exp_date = $3, full_name = $4, comment = $5, created = $6
 	WHERE id = $7`
-	_, err = store.DB.ExecContext(ctx, query,
+	_, err := store.DB.ExecContext(ctx, query,
 		store.Data.CardNumber, store.Data.Cvc, store.Data.ExpDate, store.Data.FullName, store.Data.Comment, store.Data.Date, store.Data.ID)
+
 	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	err = tx.Commit()
-	if err != nil {
-		tx.Rollback()
+
 		return err
 	}
 	return nil
@@ -110,20 +92,13 @@ func (store *BankCardLiteStorage) UpdateRecord(ctx context.Context) error {
 
 // DeleteRecord - удаление банковской карты из бд клиента по id
 func (store *BankCardLiteStorage) DeleteRecord(ctx context.Context) error {
-	tx, err := store.DB.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
+
 	query := `DELETE FROM bank_card 
 	WHERE id = $1`
-	_, err = store.DB.ExecContext(ctx, query, store.Data.ID)
+	_, err := store.DB.ExecContext(ctx, query, store.Data.ID)
+
 	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	err = tx.Commit()
-	if err != nil {
-		tx.Rollback()
+
 		return err
 	}
 	return nil

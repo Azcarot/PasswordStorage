@@ -26,12 +26,7 @@ func (store *LPWLiteStorage) CreateNewRecord(ctx context.Context) error {
 		return ErrNoLogin
 	}
 
-	tx, err := store.DB.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-
-	_, err = store.DB.ExecContext(ctx, `INSERT INTO login_pw 
+	_, err := store.DB.ExecContext(ctx, `INSERT INTO login_pw 
 	(id, login, pw, comment, username, created) 
 	values ($1, $2, $3, $4, $5, $6)
 	ON CONFLICT(id) DO UPDATE SET
@@ -42,13 +37,9 @@ func (store *LPWLiteStorage) CreateNewRecord(ctx context.Context) error {
 	username = excluded.username,
 	created = excluded.created;`,
 		store.Data.ID, store.Data.Login, store.Data.Password, store.Data.Comment, dataLogin, store.Data.Date)
+
 	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	err = tx.Commit()
-	if err != nil {
-		tx.Rollback()
+
 		return err
 	}
 	return nil
@@ -81,44 +72,28 @@ func (store *LPWLiteStorage) GetRecord(ctx context.Context) (any, error) {
 
 // UpdateRecord - обновление данных типа логин/пароль на клиенте по id
 func (store *LPWLiteStorage) UpdateRecord(ctx context.Context) error {
-	tx, err := store.DB.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
 
 	query := `UPDATE login_pw SET
 	login = $1, pw = $2, comment = $3, created = $4
 	WHERE id = $5`
-	_, err = store.DB.ExecContext(ctx, query,
+	_, err := store.DB.ExecContext(ctx, query,
 		store.Data.Login, store.Data.Password, store.Data.Comment, store.Data.Date, store.Data.ID)
 	if err != nil {
-		tx.Rollback()
 		return err
 	}
-	err = tx.Commit()
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
+
 	return nil
 }
 
 // DeleteRecord - удаление данных типа логин/пароль с клиента по id
 func (store *LPWLiteStorage) DeleteRecord(ctx context.Context) error {
-	tx, err := store.DB.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
+
 	query := `DELETE FROM login_pw
 	WHERE id = $1`
-	_, err = store.DB.ExecContext(ctx, query, store.Data.ID)
+	_, err := store.DB.ExecContext(ctx, query, store.Data.ID)
+
 	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	err = tx.Commit()
-	if err != nil {
-		tx.Rollback()
+
 		return err
 	}
 	return nil

@@ -15,6 +15,7 @@ import (
 
 	"github.com/Azcarot/PasswordStorage/internal/cfg"
 	"github.com/jackc/pgx/v5"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMain(m *testing.M) {
@@ -95,13 +96,17 @@ func TestCardSQL_CreateNewRecord(t *testing.T) {
 		args args
 	}{
 		{name: "Secret", args: args{data: BankCardData{ID: 1, CardNumber: "11", User: "User", ExpDate: "ExpDate"}, secret: "secret", wantErr: false}},
+		{name: "NoLogin", args: args{data: BankCardData{ID: 1, CardNumber: "11", User: "User", ExpDate: "ExpDate"}, secret: "secret", wantErr: true}},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
 			BCST.AddData(tt.args.data)
-			ctx := context.WithValue(context.Background(), UserLoginCtxKey, tt.args.data.User)
+			ctx := context.Background()
+			if tt.name != "NoLogin" {
+				ctx = context.WithValue(context.Background(), UserLoginCtxKey, tt.args.data.User)
+			}
 
 			err := BCST.CreateNewRecord(ctx)
 			if (err != nil) != tt.args.wantErr {
@@ -239,10 +244,18 @@ func TestBankCardStorage_GetRecord(t *testing.T) {
 		{name: "no login", args: args{ctx: context.Background()}, want: nil, wantErr: true},
 		{name: "with login, no rows", args: args{ctx: context.WithValue(context.Background(), UserLoginCtxKey, "User")}, want: BankCardData{}, wantErr: true},
 		{name: "data", args: args{ctx: context.WithValue(context.Background(), UserLoginCtxKey, "User"), data: BankCardData{ID: 1, CardNumber: "1111"}}, want: BankCardData{}, wantErr: true},
+		{name: "data2", args: args{ctx: context.WithValue(context.Background(), UserLoginCtxKey, "User"), data: BankCardData{ID: 1, CardNumber: "1111"}}, want: BankCardData{ID: 1, CardNumber: "1111"}, wantErr: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
+			if tt.name == "data2" {
+				_, _ = DB.Exec(tt.args.ctx, fmt.Sprintf("DELETE FROM %s", "bank_card"))
+				ST.CreateTablesForGoKeeper()
+				err := BCST.AddData(tt.args.data)
+				assert.NoError(t, err)
+				err = BCST.CreateNewRecord(tt.args.ctx)
+				assert.NoError(t, err)
+			}
 			got, err := BCST.GetRecord(tt.args.ctx)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("BankCardStorage.GetRecord() error = %v, wantErr %v", err, tt.wantErr)
@@ -266,7 +279,7 @@ func TestBankCardStorage_HashDatabaseData(t *testing.T) {
 		wantErr bool
 	}{
 		{name: "1", args: args{ctx: context.Background()}, want: "", wantErr: true},
-		{name: "2", args: args{ctx: context.WithValue(context.Background(), UserLoginCtxKey, "User")}, want: "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945", wantErr: false},
+		{name: "2", args: args{ctx: context.WithValue(context.Background(), UserLoginCtxKey, "User")}, want: "2b2f27b5391999b0d4a14bcfee24f647ca22b792b0105974ef73c801d0e32bfb", wantErr: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
