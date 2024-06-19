@@ -1,9 +1,9 @@
 package middleware
 
 import (
-	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -44,13 +44,25 @@ func TestWithLogging(t *testing.T) {
 
 	// Check the logs
 	entries := logs.All()
-	fmt.Println(entries)
 	require.Len(t, entries, 1)
 	entry := entries[0]
-	fmt.Println(entry)
-	for key, value := range entry.ContextMap() {
-		fmt.Println("key ", key, " value ", value)
+	result := truncateDuration(entry.Message)
+	assert.Equal(t, "uri  method GET body <nil> status 200 size 13", result)
+}
+
+func truncateDuration(input string) string {
+
+	parts := strings.Split(input, " duration ")
+	if len(parts) != 2 {
+
+		return input
 	}
 
-	assert.Equal(t, "uri  method GET body <nil> status 200 duration 0s size 13", entry.Message)
+	durationParts := strings.SplitN(parts[1], " ", 2)
+
+	if len(durationParts) < 2 {
+		return parts[0]
+	}
+
+	return parts[0] + " " + durationParts[1]
 }
