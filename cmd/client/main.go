@@ -18,6 +18,7 @@ var (
 )
 
 func main() {
+
 	fmt.Printf("Build version=%s\nBuild date =%s\nBuild commit =%s\n", buildVersion, buildDate, buildCommit)
 	flag := cfg.ParseFlagsAndENV()
 	if flag.FlagDBAddr != "" {
@@ -33,4 +34,5 @@ func main() {
 	if _, err := p.Run(); err != nil {
 		log.Fatal(err)
 	}
+
 }

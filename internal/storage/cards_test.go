@@ -20,6 +20,8 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+var dsn string
+
 func TestMain(m *testing.M) {
 	// os.Exit skips defer calls
 	// so we need to call another function
@@ -60,8 +62,9 @@ func run(m *testing.M) (code int, err error) {
 		return -1, err
 	}
 
-	dsn := fmt.Sprintf("postgres://postgres:12345@%s:%s/testdb?sslmode=disable", host, port.Port())
+	dsn = fmt.Sprintf("postgres://postgres:12345@%s:%s/testdb?sslmode=disable", host, port.Port())
 	DB, err = pgx.Connect(ctx, dsn)
+
 	if err != nil {
 		return -1, err
 	}
@@ -240,7 +243,7 @@ func TestNewConn(t *testing.T) {
 		wantErr bool
 	}{
 		{name: "normal data",
-			args: args{f: cfg.Flags{FlagDBAddr: "host='localhost' user='postgres' password='12345' sslmode=disable"}}, wantErr: false},
+			args: args{f: cfg.Flags{FlagDBAddr: dsn}}, wantErr: false},
 	}
 
 	for _, tt := range tests {
