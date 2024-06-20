@@ -1,0 +1,246 @@
+// Package requests - модуль с запросами к серверу
+// Включает запросы на регистрацию/авторизацию пользователя
+// Создание/обновление/Удаление/Синхронизация всех данных пользователя
+package requests
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+
+	"github.com/Azcarot/PasswordStorage/internal/cypher"
+	"github.com/Azcarot/PasswordStorage/internal/storage"
+)
+
+// AddCardReq - запрос на создание банковской карты на сервере
+func AddCardReq(data storage.BankCardData) (bool, error) {
+	ctx := context.Background()
+
+	err := cypher.CypherBankData(ctx, &data)
+	if err != nil {
+		return false, err
+	}
+
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return false, err
+	}
+	regURL := storage.ServURL + "/api/user/card/add"
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, regURL, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return false, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("Authorization", storage.AuthToken)
+	// Send the request using http.Client
+	client := &http.Client{}
+	response, err := client.Do(req)
+	if err != nil {
+		return false, err
+	}
+	defer response.Body.Close()
+
+	// Check the response status code
+	if response.StatusCode != http.StatusAccepted && response.StatusCode != http.StatusUnauthorized && response.StatusCode != http.StatusUnprocessableEntity {
+		return false, fmt.Errorf("unexpexteced reponse")
+	}
+
+	if response.StatusCode == http.StatusUnprocessableEntity {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+// UpdateCardReq - запрос на обновление банковской карты на сервере
+func UpdateCardReq(data storage.BankCardData) (bool, error) {
+	ctx := context.Background()
+	err := cypher.CypherBankData(ctx, &data)
+
+	if err != nil {
+		return false, err
+	}
+
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return false, err
+	}
+	regURL := storage.ServURL + "/api/user/card/update"
+	req, err := http.NewRequest("POST", regURL, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return false, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("Authorization", storage.AuthToken)
+	// Send the request using http.Client
+	client := &http.Client{}
+	response, err := client.Do(req)
+	if err != nil {
+		return false, err
+	}
+	defer response.Body.Close()
+
+	// Check the response status code
+	if response.StatusCode != http.StatusAccepted && response.StatusCode != http.StatusUnauthorized && response.StatusCode != http.StatusUnprocessableEntity {
+		return false, fmt.Errorf("unexpexteced reponse")
+	}
+
+	if response.StatusCode == http.StatusUnprocessableEntity {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+// DeleteCardReq - запрос на удаление банковской карты на сервере
+func DeleteCardReq(data storage.BankCardData) (bool, error) {
+	ctx := context.Background()
+
+	err := cypher.CypherBankData(ctx, &data)
+
+	if err != nil {
+		return false, err
+	}
+
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return false, err
+	}
+	regURL := storage.ServURL + "/api/user/card/delete"
+	req, err := http.NewRequest("POST", regURL, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return false, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("Authorization", storage.AuthToken)
+	// Send the request using http.Client
+	client := &http.Client{}
+	response, err := client.Do(req)
+	if err != nil {
+		return false, err
+	}
+	defer response.Body.Close()
+
+	// Check the response status code
+	if response.StatusCode != http.StatusOK && response.StatusCode != http.StatusUnauthorized && response.StatusCode != http.StatusUnprocessableEntity {
+		return false, fmt.Errorf("unexpexteced reponse")
+	}
+
+	if response.StatusCode == http.StatusUnprocessableEntity {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+// SyncCardReq - запрос на синхронизацию данных банковских карт, если хеши клиента и сервера
+// не различались, данные не трогаем
+func SyncCardReq() (bool, error) {
+	var err error
+	ctx := context.WithValue(context.Background(), storage.UserLoginCtxKey, storage.UserLoginPw.Login)
+	storage.SyncClientHashes.BankCard, err = storage.BCLiteS.HashDatabaseData(ctx)
+	if err != nil {
+		return false, err
+	}
+	jsonData, err := json.Marshal(storage.SyncClientHashes)
+	if err != nil {
+		return false, err
+	}
+	regURL := storage.ServURL + "/api/user/card/sync"
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, regURL, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return false, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("Authorization", storage.AuthToken)
+	// Send the request using http.Client
+
+	response, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return false, err
+	}
+	defer response.Body.Close()
+	if response.StatusCode == http.StatusOK {
+		return true, nil
+	}
+	// Check the response status code
+	if response.StatusCode != http.StatusAccepted && response.StatusCode != http.StatusUnauthorized {
+		return false, fmt.Errorf("unexpexteced reponse")
+	}
+
+	if response.StatusCode == http.StatusAccepted {
+		data, err := io.ReadAll(response.Body)
+		if err != nil {
+			return false, err
+		}
+		defer req.Body.Close()
+		var respData []storage.BankCardData
+		if err = json.Unmarshal(data, &respData); err != nil {
+			return false, err
+		}
+
+		for _, card := range respData {
+
+			storage.BCLiteS.AddData(card)
+			err := storage.BCLiteS.CreateNewRecord(ctx)
+			if err != nil {
+				return false, err
+			}
+		}
+		newData, err := storage.BCLiteS.GetAllRecords(ctx)
+
+		if err != nil {
+			return false, err
+		}
+		var newBankData []storage.BankCardData
+		if _, ok := newData.([]storage.BankCardData); !ok {
+			return false, nil
+		}
+		for _, card := range newData.([]storage.BankCardData) {
+			var data storage.BankCardData
+			data.ID = card.ID
+			newBankData = append(newBankData, data)
+		}
+		excessCards := compareUnorderedCardSlices(respData, newBankData)
+		for card := range excessCards {
+			storage.BCLiteS.AddData(card)
+			err = storage.BCLiteS.DeleteRecord(ctx)
+			if err != nil {
+				return false, err
+			}
+		}
+		return true, nil
+	}
+	return false, err
+}
+
+func cardSliceToMap(slice []storage.BankCardData) (map[int]storage.BankCardData, map[int]int) {
+	m := make(map[int]storage.BankCardData)
+	c := make(map[int]int)
+	for _, p := range slice {
+		m[p.ID] = p
+		c[p.ID]++
+	}
+	return m, c
+}
+
+// Получаем слайс структур банковских карт, которые есть только на клиенте
+func compareUnorderedCardSlices(s, c []storage.BankCardData) []storage.BankCardData {
+	if len(s) == len(c) {
+		return nil
+	}
+	var exids []storage.BankCardData
+	_, mapSIDs := cardSliceToMap(s)
+	mapClient, mapCIDS := cardSliceToMap(c)
+
+	for k, v := range mapCIDS {
+		if mapSIDs[k] != v {
+			exids = append(exids, mapClient[k])
+		}
+	}
+
+	return exids
+}
